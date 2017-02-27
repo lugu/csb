@@ -1,0 +1,52 @@
+
+
+case class Pod(
+
+case class Player(checkpoints: List[Points], laps: Int) {
+	def update(pods: List[Pods]): List[Tupple[Point,Double]]
+}
+
+class Game(player0: Player, player1: Player) {
+
+	// 0- set initial position of checkpoints and pods
+	var pods = initialisePods(checkpoints(0), checkpoints(1))
+	val checkpoints = randomCheckpoints()
+	val laps = 3
+
+	val players = for (0 to 2) yield Player(checkpoints, laps)
+
+	def updatePods(commands: List[Tupple[Point,Double]]): List[Pods]
+	
+	plot(pod: Pod) = { ... }
+	loop() = {
+		// 1- draw the pods
+		pods.foreach(plot)
+		// 2- send the position of the pods and reads back the direction and thrusts
+		val commands = players.flatmap{ p => p.update(pods) }
+		// 4- compute new positions
+		pods = updatePods(commands)
+	
+	}
+}
+
+ScalaJS init of the game:
+	0- set initial position of checkpoints and pods
+
+ScalaJS loop of the game
+	1- draw the pods
+	2- send the position of the pods
+	3- reads back the direction and thrusts
+	4- compute new positions
+	5- repeat until the ends
+
+
+1. Have a sound simulation based on the online game updates.
+2. Have the game in a controlled enviroment with a ScalaJS.
+
+- have a simulation program that can make the demo program works:
+
+ 1. querry the player's position
+ 2. resolve the new position (simulation)
+ 3. display the positions
+ 4. repeat...
+

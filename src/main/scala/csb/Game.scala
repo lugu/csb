@@ -107,3 +107,60 @@ object Game {
     dom.window.setInterval(() => run, 50)
   }
 }
+
+case class Sprite (image: dom.raw.HTMLImageElement, renderer: dom.CanvasRenderingContext2D) {
+  def displayAt(position: Pixel, angle: Double) = {
+    val width = image.naturalWidth
+    val height = image.naturalHeight
+    renderer.translate(position.x, position.y)
+    renderer.rotate(angle)
+    renderer.translate(- (width / 2), - (height / 2))
+    renderer.drawImage(image, 0, 0)
+    renderer.setTransform(1, 0, 0, 1, 0, 0)
+  }
+}
+
+trait Actor {
+  def plot()
+}
+
+case class PodActor(pod: Pod, sprite: Sprite) extends Actor {
+  def plot() = sprite.displayAt(Pixel.fromPoint(pod.position), /* FIXME */ 0)
+}
+
+case class Frame(time: Int, actors: Seq[Actor]) {
+  def plot = actors.foreach(_.plot)
+}
+
+case class Timeline(frames: Seq[Frame]) {
+  var time: Int = 0
+
+  def delay: Int = getTime - frames.filter(f => f.time > time).head.time
+  
+  def at(i: Int): Frame = frames.filter(f => f.time >= i).last
+
+  def setTime(t: Int) = {
+    time = t
+    at(time).plot
+  }
+  def getTime: Int = time
+
+  def duration: Int = frames.last.time
+}
+
+case class Timer(delay: Int, event: () => Unit ) {
+  dom.window.setInterval(event, delay)
+}
+
+case class Animation(timeline: Timeline) {
+  var isPlaying = false
+  def start() = {
+    isPlaying = false
+    Timer(timeline.delay, () => if (isPlaying) step())
+  }
+
+  def pause() = { isPlaying = false }
+  def step() = timeline.setTime(timeline.getTime + timeline.delay)
+  def begining() = timeline.setTime(0)
+  def end() = timeline.setTime(timeline.duration)
+}

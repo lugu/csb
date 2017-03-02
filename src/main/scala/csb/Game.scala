@@ -8,6 +8,7 @@ import csb.player.Point
 import scala.scalajs.js.annotation.JSExport
 import org.scalajs.dom
 import org.scalajs.dom.html
+import org.scalajs.dom.document
 import scala.util.Random
 
 object Screen {
@@ -33,7 +34,7 @@ class Game {
 
   // 0- set initial position of checkpoints and pods
   val laps = 3
-  val checkpoints: Seq[Point] = initCheckpoints
+  val checkpoints: List[Point] = initCheckpoints
   var pods: Seq[Pod] = initPods
 
   def initCheckpoints() =
@@ -42,21 +43,40 @@ class Game {
   val players = for (i <- 0 to 2) yield Player(checkpoints.toList, laps)
 
   def step() = {
-          val commands = players.flatMap{ p => p.update(pods.toList) }
-          pods = updatePods(commands)
+          val command0 = players(0).update(pods.toList)
+          val command1 = players(1).update((pods.slice(2, 4).toList ::: pods.slice(0, 2).toList))
+          pods = updatePods(command0 ::: command1)
   }
 
-  def plot(renderer: dom.CanvasRenderingContext2D) = pods.foreach(plotPod(_, renderer))
- 
-  // TODO
-  def initPods = for (i <- 0 to 2) yield Pod(checkpoints(0), checkpoints(1), Angle(0), Point(0, 0))
-  def updatePods(commands: Seq[Tuple2[Point,Double]]): Seq[Pod] = pods
-  def plotPod(pod: Pod, renderer: dom.CanvasRenderingContext2D) = {
-    renderer.fillStyle = "darkblue"
+  def podsTeamA = pods.slice(0, 2)
+  def podsTeamB = pods.slice(2, 4)
+
+  def plot(renderer: dom.CanvasRenderingContext2D) = {
+      val imgPodA = document.getElementById("podA").asInstanceOf[dom.raw.HTMLImageElement]
+      val imgPodB = document.getElementById("podB").asInstanceOf[dom.raw.HTMLImageElement]
+      podsTeamA.foreach(plotPod(_, renderer, imgPodA))
+      podsTeamB.foreach(plotPod(_, renderer, imgPodB))
+  }
+
+  def plotPod(pod: Pod, renderer: dom.CanvasRenderingContext2D, image: dom.raw.HTMLImageElement) = {
+    
+    val angle = - pod.orientation.radianWith(Point(1, 0)).radian
+    val width = image.naturalWidth
+    val height = image.naturalHeight
     val pix = Pixel.fromPoint(pod.position)
-    val size = Pixel.fromPoint(Point(pod.podSize, pod.podSize))
-    renderer.fillRect(pix.x, pix.y, size.x, size.y)
-    println("hello")
+    renderer.translate(pix.x, pix.y)
+    renderer.rotate(angle)
+    renderer.translate(- (width / 2), - (height / 2))
+    renderer.drawImage(image, 0, 0)
+    renderer.setTransform(1, 0, 0, 1, 0, 0)
+  }
+ 
+  def initPods = for (i <- 0 to 4) yield Pod(checkpoints(0), checkpoints(1), Angle(0), Point(0, 0))
+  def updatePods(commands: Seq[Tuple2[Point,Double]]): Seq[Pod] = {
+    pods.toList.zip(commands).map {
+      case (pod: Pod, (direction: Point, thrust: Double)) =>
+        pod.updateDirection(direction).updateSpeed(thrust).updatePosition
+    }
   }
 }
 
@@ -74,13 +94,12 @@ object Game {
     var p = Point(0, 0)
     val corners = Seq(Point(255, 255), Point(0, 255), Point(128, 0))
 
-
     def clear() = {
-      renderer.fillStyle = "rgba(255, 255, 255, 0.0)"
-      renderer.fillRect(0, 0, Screen.width, Screen.height)
+      renderer.clearRect(0, 0, Screen.width, Screen.height)
     }
 
     def run = {
+      clear()
       game.plot(renderer)
       game.step()
     }

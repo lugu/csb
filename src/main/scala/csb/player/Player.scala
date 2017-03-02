@@ -256,9 +256,9 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
     
     def chooseAttack: Option[Pilot] = {
         val someSpeed = 200
-        val enemies = race.opponents.filter(o => pod.detectCollision(o))
-        if (!enemies.isEmpty && pod.score(race) < friend.score(race))
-            Some(PilotAttack(pod, enemies.head))
+        val e = race.enemies.filter(o => pod.detectCollision(o))
+        if (!e.isEmpty && pod.score(race) < friend.score(race))
+            Some(PilotAttack(pod, e.head))
         else None
     }
     
@@ -550,6 +550,19 @@ case class Pod(
         val t = other.position
         if (Pod.distanceToLine(p, u, t) < podRadius) true else false
     }
+
+    def updateDirection(dir: Point): Pod = {
+      val expectedOrientation = (dir - position).normalize
+      val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
+      val newAngleToDest = orientation.radianWith(destination)
+      Pod(position, destination, newAngleToDest, speed)
+    }
+
+    def updateSpeed(t: Double): Pod =
+           Pod(position, destination, angleToDest, speed * 0.85 + orientation * t)
+
+    def updatePosition: Pod = Pod(position + speed, destination, angleToDest, speed)
+
 }
 
 object Pod {
@@ -581,15 +594,14 @@ case class Race(
     val checkpoints: List[Point],
     val laps: Int) {
     
-    def players = pods.slice(0, 2)
-    def pod0 = players(0)
-    def pod1 = players(1)
+    def pod0 = pods(0)
+    def pod1 = pods(1)
     
-    def opponents = pods.slice(2, 4)
-    def enemy0 = opponents(0)
-    def enemy1 = opponents(1)
+    def enemies = pods.slice(2, 4)
+    def enemy0 = pods(2)
+    def enemy1 = pods(3)
         
-    def friend(me: Pod) = if (me == players(0)) players(1) else players(0)
+    def friend(me: Pod) = if (me == pod0) pod1 else pod0
     
     def score(p: Pod): Int = {
         val podIndex = pods.indexOf(p)
@@ -618,7 +630,7 @@ case class Race(
         pods.foreach(score(_))
     }
     
-    val pilots: List[Pilot] = players.map(pod => Pilot(pod, this))
+    val pilots: List[Pilot] = List(Pilot(pod0, this), Pilot(pod1, this))
     
     def commands =  {
         pilots.map(_.command)

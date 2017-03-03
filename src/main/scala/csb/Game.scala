@@ -4,6 +4,7 @@ import csb.player.Player
 import csb.player.Pod
 import csb.player.Angle
 import csb.player.Point
+import csb.player.Command
 
 import scala.scalajs.js.annotation.JSExport
 import org.scalajs.dom
@@ -30,9 +31,7 @@ case class Pixel(x: Int, y: Int) {
     def toPoint = Point(x * Board.width / Screen.width, - y * Board.width / Screen.width)
 }
 
-class Game {
-
-  // 0- set initial position of checkpoints and pods
+class Race {
   val laps = 3
   val checkpoints: List[Point] = initCheckpoints
   var pods: Seq[Pod] = initPods
@@ -42,42 +41,48 @@ class Game {
 
   val players = for (i <- 0 to 2) yield Player(checkpoints.toList, laps)
 
+  var count = 0
+  def hasNextStep: Boolean = (count == 100) // FIXME: find better terminaison condition
+
   def step() = {
-          val command0 = players(0).update(pods.toList)
-          val command1 = players(1).update((pods.slice(2, 4).toList ::: pods.slice(0, 2).toList))
-          pods = updatePods(command0 ::: command1)
+        count += 1
+
+        val commands = players(0).commands(pods.toList) :::
+            players(1).commands((pods.slice(2, 4).toList ::: pods.slice(0, 2).toList))
+        pods = updatePods(commands)
   }
 
   def podsTeamA = pods.slice(0, 2)
   def podsTeamB = pods.slice(2, 4)
 
-  def plot(renderer: dom.CanvasRenderingContext2D) = {
-      val imgPodA = document.getElementById("podA").asInstanceOf[dom.raw.HTMLImageElement]
-      val imgPodB = document.getElementById("podB").asInstanceOf[dom.raw.HTMLImageElement]
-      podsTeamA.foreach(plotPod(_, renderer, imgPodA))
-      podsTeamB.foreach(plotPod(_, renderer, imgPodB))
-  }
-
-  def plotPod(pod: Pod, renderer: dom.CanvasRenderingContext2D, image: dom.raw.HTMLImageElement) = {
-    
-    val angle = - pod.orientation.radianWith(Point(1, 0)).radian
-    val width = image.naturalWidth
-    val height = image.naturalHeight
-    val pix = Pixel.fromPoint(pod.position)
-    renderer.translate(pix.x, pix.y)
-    renderer.rotate(angle)
-    renderer.translate(- (width / 2), - (height / 2))
-    renderer.drawImage(image, 0, 0)
-    renderer.setTransform(1, 0, 0, 1, 0, 0)
-  }
- 
   def initPods = for (i <- 0 to 4) yield Pod(checkpoints(0), checkpoints(1), Angle(0), Point(0, 0))
-  def updatePods(commands: Seq[Tuple2[Point,Double]]): Seq[Pod] = {
+  def updatePods(commands: Seq[Command]): Seq[Pod] = {
     pods.toList.zip(commands).map {
-      case (pod: Pod, (direction: Point, thrust: Double)) =>
+      case (pod: Pod, Command(direction, thrust)) =>
         pod.updateDirection(direction).updateSpeed(thrust).updatePosition
     }
   }
+
+}
+
+class Game(renderer: dom.CanvasRenderingContext2D) {
+
+  val race = new Race()
+
+  def sprite(name: String) = Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement], renderer)
+  val sprites: List[Sprite] = List(sprite("podA"), sprite("podA"), sprite("podB"), sprite("podB"))
+
+  val animation = new Animation(Timeline(frames))
+
+  def raceActors = race.pods.zip(sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
+
+  def frames: Stream[Frame] = {
+      race.step()
+      val next = if (race.hasNextStep) frames else Stream.empty
+      Frame(race.count, raceActors) #:: next
+  }
+
+  def run() = animation.play()
 }
 
 @JSExport
@@ -87,24 +92,8 @@ object Game {
     val renderer = canvas.getContext("2d")
                     .asInstanceOf[dom.CanvasRenderingContext2D]
 
-    var count = 0
-
-    val game = new Game()
-
-    var p = Point(0, 0)
-    val corners = Seq(Point(255, 255), Point(0, 255), Point(128, 0))
-
-    def clear() = {
-      renderer.clearRect(0, 0, Screen.width, Screen.height)
-    }
-
-    def run = {
-      clear()
-      game.plot(renderer)
-      game.step()
-    }
-
-    dom.window.setInterval(() => run, 50)
+    val game = new Game(renderer)
+    game.run()
   }
 }
 
@@ -125,11 +114,19 @@ trait Actor {
 }
 
 case class PodActor(pod: Pod, sprite: Sprite) extends Actor {
-  def plot() = sprite.displayAt(Pixel.fromPoint(pod.position), /* FIXME */ 0)
+  def plot() = {
+    val angle = - pod.orientation.radianWith(Point(1, 0)).radian
+    val pix = Pixel.fromPoint(pod.position)
+    sprite.displayAt(pix, angle)
+  }
 }
 
 case class Frame(time: Int, actors: Seq[Actor]) {
-  def plot = actors.foreach(_.plot)
+  def plot = {
+    // FIXME: need to clear the screen before each frame.
+    // renderer.clearRect(0, 0, Screen.width, Screen.height)
+    actors.foreach(_.plot)
+  }
 }
 
 case class Timeline(frames: Seq[Frame]) {
@@ -154,7 +151,7 @@ case class Timer(delay: Int, event: () => Unit ) {
 
 case class Animation(timeline: Timeline) {
   var isPlaying = false
-  def start() = {
+  def play() = {
     isPlaying = false
     Timer(timeline.delay, () => if (isPlaying) step())
   }

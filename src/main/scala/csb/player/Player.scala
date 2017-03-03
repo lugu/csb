@@ -157,7 +157,7 @@ trait Pilot {
     def direction: Point
     def thrust: Double
     def label: String
-    def command: Tuple2[Point,Double] = (direction, thrust)
+    def command = Command(direction, thrust)
     def answer: String = {
         val t = thrust.toInt
         val s = if (t == boost) "BOOST" 
@@ -720,8 +720,10 @@ object Race {
     }
 }
 
+case class Command(direction: Point, thrust: Double)
+
 case class Player(checkpoints: List[Point], laps: Int) {
-   def update(pods: List[Pod]): List[Tuple2[Point,Double]] =
+   def commands(pods: List[Pod]): List[Command] =
      Race(pods, checkpoints, laps).commands
 }
 

@@ -28,6 +28,8 @@ object Board {
 
     def sprite(name: String) = Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement], renderer)
     val sprites: List[Sprite] = List(sprite("podA"), sprite("podA"), sprite("podB"), sprite("podB"))
+
+    def logElement = document.getElementById("terminal").asInstanceOf[html.Div]
 }
 
 object Pixel {
@@ -76,7 +78,8 @@ class Race {
         pod.updateDirection(direction).updateSpeed(thrust).updatePosition
     }
   }
-
+  
+  def logs: String = "step number " + count
 }
 
 // Game connect the simulation with the board
@@ -84,22 +87,24 @@ class Game() {
 
   val race = new Race()
 
-  val animation = new Animation(Timeline(frames))
+  val animation = new Animation(FrameTimeline(frames))
 
   val controller = new WindowController(animation)
 
-  def raceActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
+  def terminal = new Terminal(Board.logElement)
+  def podActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
+  def actors = LogActor(race.logs, terminal) +: podActors
 
   def frames: Stream[Frame] = {
       if (race.count == 0) {
-        val head = Frame(race.count, raceActors)
+        val head = Frame(race.count, actors)
         race.step()
-        if (race.hasNextStep) head #:: Frame(race.count, raceActors) #:: frames
-        else head #:: Frame(race.count, raceActors) #:: Stream.empty
+        if (race.hasNextStep) head #:: Frame(race.count, actors) #:: frames
+        else head #:: Frame(race.count, actors) #:: Stream.empty
       } else {
         race.step()
-        if (race.hasNextStep) Frame(race.count, raceActors) #:: frames
-        else Frame(race.count, raceActors) #:: Stream.empty
+        if (race.hasNextStep) Frame(race.count, actors) #:: frames
+        else Frame(race.count, actors) #:: Stream.empty
     }
   }
 
@@ -132,6 +137,14 @@ trait Actor {
   def plot()
 }
 
+case class Terminal(element: html.Div) {
+  def print(message: String) = element.innerHTML = message
+}
+
+case class LogActor(message: String, term: Terminal) extends Actor {
+  def plot() = term.print(message)
+}
+
 case class PodActor(pod: Pod, sprite: Sprite) extends Actor {
   def plot() = {
     val angle = - pod.orientation.radianWith(Point(1, 0)).radian
@@ -147,12 +160,27 @@ case class Frame(time: Int, actors: Seq[Actor]) {
   }
 }
 
-case class Timeline(frames: Stream[Frame]) {
-  var time = 0
+trait Timeline {
+  def begining: Int // returns the first
+  def nextTime: Int // returns the last if none
+  def previousTime: Int // returns the privious time or the first
+  def setTime(t: Int) // returns 0 if none
+  def computeDuration(): Int // returns total duration
+}
+
+case class FrameTimeline(frames: Stream[Frame]) extends Timeline {
+  var time = begining
+
+  def begining = frames.head.time
+  // warning: this consume the stream
+  def computeDuration(): Int = frames.last.time
+
   def nextTime: Int = frames.find(f => f.time > time) match {
       case Some(f) => f.time
-      case None => 0
+      case None => computeDuration()
   }
+  def previousTime: Int = if (time == 0) 0
+      else frames.takeWhile(f => f.time < time).last.time
   
   def frame: Frame = frames.find(f => f.time == time) match {
     case Some(f) => f
@@ -168,9 +196,6 @@ case class Timeline(frames: Stream[Frame]) {
       frame.plot
     }
   }
-
-  // warning: this consume the stream
-  def computeDuration(): Int = frames.last.time
 }
 
 case class Timer(ms: Double, event: () => Unit ) {
@@ -203,18 +228,17 @@ case class Animation(timeline: Timeline) {
     timeline.setTime(t)
   }
 
-  def begining() = jumpTo(0)
+  def begining() = jumpTo(timeline.begining)
   def end() = jumpTo(timeline.computeDuration())
 
-  def stepBackward() = jumpTo(timeline.time-1)
-  def stepForward() = if (timeline.nextTime != 0) jumpTo(timeline.nextTime)
+  def stepBackward() = jumpTo(timeline.previousTime)
+  def stepForward() = jumpTo(timeline.nextTime)
 }
 
 class WindowController(animation: Animation) {
   def keypress(event: dom.raw.KeyboardEvent) = event.key match {
     case "PageUp" =>animation.begining()
     case "PageDown" => animation.end()
-    case "ArrowRight" => animation.stepForward()
     case "ArrowLeft" =>animation.stepBackward()
     case "ArrowRight" => animation.stepForward()
     case " " => animation.playSwitch()

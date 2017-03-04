@@ -194,9 +194,6 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
                 (pod.destination - pod.position).radianWith(pilot.direction - pod.position)
         val directionToOrientationAngle = pod.angleToDest + directionToDestinationAngle 
         
-        Console.err.println("directionToDestinationAngle ", directionToDestinationAngle)
-        Console.err.println("directionToOrientationAngle ", directionToOrientationAngle)
-        
         if (pod.badCollision(race.enemy0))
             shield
         else if (pod.badCollision(race.enemy1))
@@ -206,7 +203,6 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
         else {
             val ratio = 1 - (abs(directionToOrientationAngle.degree) - maxAngle.degree) /
                                 (minAngle.degree - maxAngle.degree)
-            Console.err.println("ratio ", ratio)
             minSpeed + (150 - minSpeed) * ratio
         }
     }
@@ -359,8 +355,6 @@ case class PilotWait(pod: Pod, race: Race, checkpoint: Point) extends Pilot {
     def direction = position
     def thrust = {
         val t = if (dist > smallDistance) 200 else (dist / smallDistance) * 200
-        Console.err.println("dis ", dist)
-        Console.err.println("thrust ", t)
         t
     }
 }
@@ -493,10 +487,7 @@ case class Pod(
     def detectCollision(other: Pod) = detectPossibleCollision(other, 200)
     def detectPossibleCollision(other: Pod, extra: Int) = {
         val dist = (position + speed).distanceTo(other.position + other.speed)
-        val ret = if (dist < podSize * 2 + extra) true else false
-        // Console.err.println("collision distance: " + dist)
-        if (ret) Console.err.println("collision detected!")
-        ret
+        if (dist < podSize * 2 + extra) true else false
     }
         
     // bad collision is a collision that oppose the pod speed
@@ -508,11 +499,6 @@ case class Pod(
             val collisionAngleToSpeed = speed.radianWith(otherDirection)
             val speedAngle = speed.radianWith(other.speed)
             
-            Console.err.println("speed " + speed)
-            Console.err.println("otherDirection " + otherDirection)
-            Console.err.println("collisionAngleToSpeed " + collisionAngleToSpeed)
-            Console.err.println("speedAngle " + speedAngle)
-            
             if (collisionAngleToSpeed < Degree(45) && speedAngle > Degree(45)) true
             else false
         } else false
@@ -523,7 +509,7 @@ case class Pod(
     def nextDestination(race: Race): Point = race.nextCheckpoint(destination)
     
     lazy val destinationDirection = (destination - position).normalize
-    def orientation = destinationDirection.rotate(angleToDest)
+    def orientation = destinationDirection.rotate(-angleToDest)
     
     def score(race: Race): Int = race.score(this)
     def boostAvailable(race: Race) = {

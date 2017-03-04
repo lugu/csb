@@ -1,10 +1,10 @@
 package csb
 
+import csb.player.Command
+import csb.player.Degree
 import csb.player.Player
 import csb.player.Pod
-import csb.player.Angle
 import csb.player.Point
-import csb.player.Command
 
 import scala.scalajs.js.annotation.JSExport
 import org.scalajs.dom
@@ -20,6 +20,9 @@ object Screen {
 object Board {
     def width = 16000
     def height = 9000
+    val renderer = document.getElementById("canvas").asInstanceOf[html.Canvas].getContext("2d")
+                    .asInstanceOf[dom.CanvasRenderingContext2D]
+    def clear() = renderer.clearRect(0, 0, Screen.width, Screen.height)
 }
 
 object Pixel {
@@ -42,11 +45,10 @@ class Race {
   val players = for (i <- 0 to 2) yield Player(checkpoints.toList, laps)
 
   var count = 0
-  def hasNextStep: Boolean = (count == 100) // FIXME: find better terminaison condition
+  def hasNextStep: Boolean = (count < 10) // FIXME: find better terminaison condition
 
   def step() = {
         count += 1
-
         val commands = players(0).commands(pods.toList) :::
             players(1).commands((pods.slice(2, 4).toList ::: pods.slice(0, 2).toList))
         pods = updatePods(commands)
@@ -55,7 +57,12 @@ class Race {
   def podsTeamA = pods.slice(0, 2)
   def podsTeamB = pods.slice(2, 4)
 
-  def initPods = for (i <- 0 to 4) yield Pod(checkpoints(0), checkpoints(1), Angle(0), Point(0, 0))
+  def initPods = {
+    val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
+    val positions = List(1, 3, -1, -3).map(pos => checkpoints(0) + departLine * (pos * 450))
+    positions.map(p => Pod(p, checkpoints(1), Degree(0), Point(0, 0)))
+  }
+
   def updatePods(commands: Seq[Command]): Seq[Pod] = {
     pods.toList.zip(commands).map {
       case (pod: Pod, Command(direction, thrust)) =>
@@ -78,8 +85,8 @@ class Game(renderer: dom.CanvasRenderingContext2D) {
 
   def frames: Stream[Frame] = {
       race.step()
-      val next = if (race.hasNextStep) frames else Stream.empty
-      Frame(race.count, raceActors) #:: next
+      if (race.hasNextStep) Frame(race.count, raceActors) #:: frames
+      else Frame(race.count, raceActors) #:: Stream.empty
   }
 
   def run() = animation.play()
@@ -89,9 +96,9 @@ class Game(renderer: dom.CanvasRenderingContext2D) {
 object Game {
   @JSExport
   def main(canvas: html.Canvas): Unit = {
+
     val renderer = canvas.getContext("2d")
                     .asInstanceOf[dom.CanvasRenderingContext2D]
-
     val game = new Game(renderer)
     game.run()
   }
@@ -123,41 +130,58 @@ case class PodActor(pod: Pod, sprite: Sprite) extends Actor {
 
 case class Frame(time: Int, actors: Seq[Actor]) {
   def plot = {
-    // FIXME: need to clear the screen before each frame.
-    // renderer.clearRect(0, 0, Screen.width, Screen.height)
+    Board.clear()
     actors.foreach(_.plot)
   }
 }
 
-case class Timeline(frames: Seq[Frame]) {
-  var time: Int = 0
-
-  def delay: Int = getTime - frames.filter(f => f.time > time).head.time
+case class Timeline(frames: Stream[Frame]) {
+  var time = 0
+  def nextTime: Int = frames.find(f => f.time > time) match {
+      case Some(f) => f.time
+      case None => 0
+  }
   
-  def at(i: Int): Frame = frames.filter(f => f.time >= i).last
+  def frame: Frame = frames.find(f => f.time == time) match {
+    case Some(f) => f
+    case None => {
+      Console.err.println("ERROR: frame not found: ", time)
+      frames.head
+    }
+  }
 
   def setTime(t: Int) = {
-    time = t
-    at(time).plot
+      time = t
+      frame.plot
   }
-  def getTime: Int = time
 
-  def duration: Int = frames.last.time
+  // warning: this consume the stream
+  def computeDuration(): Int = frames.last.time
 }
 
-case class Timer(delay: Int, event: () => Unit ) {
-  dom.window.setInterval(event, delay)
+case class Timer(ms: Double, event: () => Unit ) {
+  dom.window.setTimeout(event, ms)
 }
 
 case class Animation(timeline: Timeline) {
   var isPlaying = false
-  def play() = {
-    isPlaying = false
-    Timer(timeline.delay, () => if (isPlaying) step())
+  def fps = 10
+  def loop() = {
+    Timer(50, () => if (isPlaying) {
+        if (timeline.nextTime != 0) {
+          timeline.setTime(timeline.nextTime)
+          play()
+        } else {
+          isPlaying = false
+        }
+    })
+  }
+  def play(): Unit = {
+    isPlaying = true
+    loop()
   }
 
   def pause() = { isPlaying = false }
-  def step() = timeline.setTime(timeline.getTime + timeline.delay)
   def begining() = timeline.setTime(0)
-  def end() = timeline.setTime(timeline.duration)
+  def end() = timeline.setTime(timeline.computeDuration())
 }

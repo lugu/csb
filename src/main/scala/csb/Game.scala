@@ -5,6 +5,7 @@ import csb.player.Degree
 import csb.player.Player
 import csb.player.Pod
 import csb.player.Point
+import csb.player.Print
 
 import scala.scalajs.js.annotation.JSExport
 import org.scalajs.dom
@@ -79,7 +80,21 @@ class Race {
     }
   }
   
-  def logs: String = "step number " + count
+  Print.setPrinter { message => Logger.log(message) }
+  def logs: String = Logger.flush
+}
+
+object Logger {
+  def reset: String = ""
+  var data: String = reset
+  def flush: String = {
+    val ret = data
+    data = reset
+    ret 
+  }
+  def log(msg: String) = {
+    data += msg + "\n" 
+  }
 }
 
 // Game connect the simulation with the board
@@ -138,7 +153,14 @@ trait Actor {
 }
 
 case class Terminal(element: html.Div) {
-  def print(message: String) = element.innerHTML = message
+  def format(message: String) = {
+    import scalatags.JsDom.all._
+    ul(message.split("\n").map(li(_))).render
+  }
+  def print(message: String) = {
+    while(element.hasChildNodes) element.removeChild(element.firstChild)
+    element.appendChild(format(message))
+  }
 }
 
 case class LogActor(message: String, term: Terminal) extends Actor {

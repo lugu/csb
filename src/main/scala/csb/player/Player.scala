@@ -229,7 +229,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
              .getOrElse(Pilot0(pod))))))), pod, race)
     
     val init = {
-        // Console.err.println(this)
+        Print(this)
     }
     
     override def toString = pod.toString
@@ -259,7 +259,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
     }
     
     def fightCondition: Boolean = {
-        // Console.err.println("Last turn? ", race.isLastTurn)
+        // Print("Last turn? ", race.isLastTurn)
         // if (!pod.isLeader(race) && race.isLastTurn &&
         //     race.compareScore(race.enemyLeader, race.myLeader) == race.enemyLeader)
         //         true else false
@@ -651,8 +651,8 @@ case class Race(
             val target = found.head
             target
         } else {
-             Console.err.println("can not find next checkpoint to ", p)
-             checkpoints.zipWithIndex.foreach(Console.err.println)
+             Print("can not find next checkpoint to ", p)
+             checkpoints.zipWithIndex.foreach(Print(_))
              Point(0, 0)
         }
     }
@@ -667,8 +667,8 @@ case class Race(
             val target = found.head
             target
         } else {
-             Console.err.println("can not find next checkpoint to ", p)
-             checkpoints.zipWithIndex.foreach(Console.err.println)
+             Print("can not find next checkpoint to ", p)
+             checkpoints.zipWithIndex.foreach(Print(_))
              Point(0, 0)
         }
     }
@@ -707,6 +707,16 @@ object Race {
 }
 
 case class Command(direction: Point, thrust: Double)
+
+object Print {
+  var printer: (String)=>Unit = Console.err.println(_)
+  def setPrinter(p: String => Unit) = {
+      printer = p
+  }
+  def apply(messages: Object*) = {
+    printer(messages.mkString(" "))
+  }
+}
 
 case class Player(checkpoints: List[Point], laps: Int) {
    def commands(pods: List[Pod]): List[Command] =

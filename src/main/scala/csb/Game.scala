@@ -17,12 +17,17 @@ object Screen {
     def height = 484
 }
 
+// Board holds the content to be display
 object Board {
     def width = 16000
     def height = 9000
-    val renderer = document.getElementById("canvas").asInstanceOf[html.Canvas].getContext("2d")
+    def canvas = document.getElementById("canvas").asInstanceOf[html.Canvas]
+    val renderer = canvas.getContext("2d")
                     .asInstanceOf[dom.CanvasRenderingContext2D]
     def clear() = renderer.clearRect(0, 0, Screen.width, Screen.height)
+
+    def sprite(name: String) = Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement], renderer)
+    val sprites: List[Sprite] = List(sprite("podA"), sprite("podA"), sprite("podB"), sprite("podB"))
 }
 
 object Pixel {
@@ -30,10 +35,12 @@ object Pixel {
           Pixel((p.x / Board.width * Screen.width).toInt, (-p.y / Board.height * Screen.height).toInt)
 }
 
+// Pixel is the coordinate system for the Board
 case class Pixel(x: Int, y: Int) {
     def toPoint = Point(x * Board.width / Screen.width, - y * Board.width / Screen.width)
 }
 
+// Race holds the state of the simulation
 class Race {
   val laps = 3
   val checkpoints: List[Point] = initCheckpoints
@@ -72,21 +79,28 @@ class Race {
 
 }
 
-class Game(renderer: dom.CanvasRenderingContext2D) {
+// Game connect the simulation with the board
+class Game() {
 
   val race = new Race()
 
-  def sprite(name: String) = Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement], renderer)
-  val sprites: List[Sprite] = List(sprite("podA"), sprite("podA"), sprite("podB"), sprite("podB"))
-
   val animation = new Animation(Timeline(frames))
 
-  def raceActors = race.pods.zip(sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
+  val controller = new WindowController(animation)
+
+  def raceActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
 
   def frames: Stream[Frame] = {
-      race.step()
-      if (race.hasNextStep) Frame(race.count, raceActors) #:: frames
-      else Frame(race.count, raceActors) #:: Stream.empty
+      if (race.count == 0) {
+        val head = Frame(race.count, raceActors)
+        race.step()
+        if (race.hasNextStep) head #:: Frame(race.count, raceActors) #:: frames
+        else head #:: Frame(race.count, raceActors) #:: Stream.empty
+      } else {
+        race.step()
+        if (race.hasNextStep) Frame(race.count, raceActors) #:: frames
+        else Frame(race.count, raceActors) #:: Stream.empty
+    }
   }
 
   def run() = animation.play()
@@ -97,9 +111,7 @@ object Game {
   @JSExport
   def main(canvas: html.Canvas): Unit = {
 
-    val renderer = canvas.getContext("2d")
-                    .asInstanceOf[dom.CanvasRenderingContext2D]
-    val game = new Game(renderer)
+    val game = new Game()
     game.run()
   }
 }
@@ -151,8 +163,10 @@ case class Timeline(frames: Stream[Frame]) {
   }
 
   def setTime(t: Int) = {
+      if (t >= frames.head.time) {
       time = t
       frame.plot
+    }
   }
 
   // warning: this consume the stream
@@ -182,6 +196,29 @@ case class Animation(timeline: Timeline) {
   }
 
   def pause() = { isPlaying = false }
-  def begining() = timeline.setTime(0)
-  def end() = timeline.setTime(timeline.computeDuration())
+  def playSwitch() = if (isPlaying) pause() else play()
+
+  def jumpTo(t: Int) = {
+    if (isPlaying) pause()
+    timeline.setTime(t)
+  }
+
+  def begining() = jumpTo(0)
+  def end() = jumpTo(timeline.computeDuration())
+
+  def stepBackward() = jumpTo(timeline.time-1)
+  def stepForward() = if (timeline.nextTime != 0) jumpTo(timeline.nextTime)
 }
+
+class WindowController(animation: Animation) {
+  def keypress(event: dom.raw.KeyboardEvent) = event.key match {
+    case "PageUp" =>animation.begining()
+    case "PageDown" => animation.end()
+    case "ArrowRight" => animation.stepForward()
+    case "ArrowLeft" =>animation.stepBackward()
+    case "ArrowRight" => animation.stepForward()
+    case " " => animation.playSwitch()
+  }
+  dom.window.addEventListener[dom.raw.KeyboardEvent]("keypress", keypress _)
+}
+

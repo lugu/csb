@@ -6,17 +6,45 @@
 </head>
 <body style="margin: 0px">
 
-<div>
-    <canvas style="display:block; background-image:url('board.png');" id="canvas" width="860" height="484"/>
+<style type="text/css">
+.full {
+   display:flex;
+   width:100%;
+}
+#terminalA #terminalB {
+  float:left;
+}
+#canvas {
+   
+}
+.terminal {
+  font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+}
+ul {
+  list-style: none;
+}
+
+ul li:before {
+  content: "> ";
+}
+
+</style>
+<div style="display:flex">
+<canvas class="terminal" style="display:inline-block;background-image:url('board.png');" id="canvas" width="860" height="484"/></canvas>
+<span class="terminal" id="terminal0" > </span>
 </div>
-<div id="terminal"> </div>
-<img id="podA" src="pod0.png">
-<img id="podB" src="pod1.png">
+
+<div class="full">
+  <span class="terminal" id="terminalA"> </span>
+  <span class="terminal" id="terminalB"> </span>
+</div>
+
+
+<img id="podA" src="pod0.png" style="display: none;">
+<img id="podB" src="pod1.png" style="display: none;">
 
 <script type="text/javascript" src="../coderstrikeback-fastopt.js"></script>
 <script type="text/javascript" src="/workbench.js"></script>
-<script>
-    csb.Game().main(document.getElementById('canvas'));
-</script>
+<script> csb.Game().main(document.getElementById('canvas')); </script>
 </body>
 </html>

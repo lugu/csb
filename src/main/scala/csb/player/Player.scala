@@ -474,10 +474,9 @@ case class Pod(
     def speedAngleToDest = speed.radianFrom(destinationDirection)
     
     override def toString =  "distance: " + distance +
-        "\nspeed: " + speed.norm +
-        "\nsteps to destination: " + stepsToDestination +
-        "\norientation to destination angle: " + angleToDest +
-        "\nspeed to destination angle: " + speedAngleToDest
+        "\ndestination: " + destination +
+        "\nangleToDest: " + angleToDest +
+        "\nspeed: " + speed.norm
     
     val checkpointRadius = 600
     val podRadius = 600

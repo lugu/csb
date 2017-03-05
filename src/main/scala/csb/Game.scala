@@ -30,7 +30,10 @@ object Board {
     def sprite(name: String) = Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement], renderer)
     val sprites: List[Sprite] = List(sprite("podA"), sprite("podA"), sprite("podB"), sprite("podB"))
 
-    def logElement = document.getElementById("terminal").asInstanceOf[html.Div]
+    val terminals = {
+        val tags = List("terminalA", "terminalB", "terminal0")
+        tags.map(t => new Terminal(document.getElementById(t).asInstanceOf[html.Span]))
+    }
 }
 
 object Pixel {
@@ -47,7 +50,7 @@ case class Pixel(x: Int, y: Int) {
 class Race {
   val laps = 3
   val checkpoints: List[Point] = initCheckpoints
-  var pods: Seq[Pod] = initPods
+  var pods: List[Pod] = initPods
 
   def initCheckpoints() =
         List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
@@ -57,11 +60,22 @@ class Race {
   var count = 0
   def hasNextStep: Boolean = (count < 10) // FIXME: find better terminaison condition
 
+  def playerA = players(0)
+  def playerB = players(1)
+  def loggerA = loggers(0)
+  def loggerB = loggers(1)
+  def podsA = pods.toList
+  def podsB = (pods.slice(2, 4).toList ::: pods.slice(0, 2).toList)
+
+  def commands(player: Player, pods: Seq[Pod], logger: Logger): List[Command] = {
+        Print.setPrinter { message => logger(message) }
+        player.commands(pods.toList)
+  }
+
   def step() = {
         count += 1
-        val commands = players(0).commands(pods.toList) :::
-            players(1).commands((pods.slice(2, 4).toList ::: pods.slice(0, 2).toList))
-        pods = updatePods(commands)
+        val cmds = commands(playerA, podsA, loggerA) ::: commands(playerB, podsB, loggerB)
+        pods = updatePods(cmds)
   }
 
   def podsTeamA = pods.slice(0, 2)
@@ -73,28 +87,36 @@ class Race {
     positions.map(p => Pod(p, checkpoints(1), Degree(0), Point(0, 0)))
   }
 
-  def updatePods(commands: Seq[Command]): Seq[Pod] = {
+  def updatePods(commands: List[Command]): List[Pod] = {
+    pods.toList.foreach(Info.logger(_))
+
     pods.toList.zip(commands).map {
       case (pod: Pod, Command(direction, thrust)) =>
         pod.updateDirection(direction).updateSpeed(thrust).updatePosition
     }
   }
   
-  Print.setPrinter { message => Logger.log(message) }
-  def logs: String = Logger.flush
+  val loggers = List(new Logger(), new Logger(), Info.logger)
 }
 
-object Logger {
-  def reset: String = ""
-  var data: String = reset
-  def flush: String = {
+object Info {
+  val logger = new Logger()
+  def apply(message: String) = logger.print(message)
+  def apply(messages: Object*) = logger(messages)
+}
+
+class Logger {
+  def reset = List()
+  var data: List[String] = reset
+  def flush: List[String] = {
     val ret = data
     data = reset
-    ret 
+    ret
   }
-  def log(msg: String) = {
-    data += msg + "\n" 
+  def print(msg: String): Unit = {
+    data = data :+ msg
   }
+  def apply(messages: Object*) = print(messages.mkString(" "))
 }
 
 // Game connect the simulation with the board
@@ -106,9 +128,9 @@ class Game() {
 
   val controller = new WindowController(animation)
 
-  def terminal = new Terminal(Board.logElement)
   def podActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
-  def actors = LogActor(race.logs, terminal) +: podActors
+  def logActors = race.loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
+  def actors = logActors ::: podActors
 
   def frames: Stream[Frame] = {
       if (race.count == 0) {
@@ -152,19 +174,22 @@ trait Actor {
   def plot()
 }
 
-case class Terminal(element: html.Div) {
+case class Terminal(element: html.Span) {
+  def clear = while(element.hasChildNodes) element.removeChild(element.firstChild)
   def format(message: String) = {
     import scalatags.JsDom.all._
     ul(message.split("\n").map(li(_))).render
   }
   def print(message: String) = {
-    while(element.hasChildNodes) element.removeChild(element.firstChild)
     element.appendChild(format(message))
   }
 }
 
-case class LogActor(message: String, term: Terminal) extends Actor {
-  def plot() = term.print(message)
+case class LogActor(messages: List[String], term: Terminal) extends Actor {
+  def plot() = {
+      term.clear
+      messages.foreach(term.print)
+  }
 }
 
 case class PodActor(pod: Pod, sprite: Sprite) extends Actor {
@@ -207,7 +232,7 @@ case class FrameTimeline(frames: Stream[Frame]) extends Timeline {
   def frame: Frame = frames.find(f => f.time == time) match {
     case Some(f) => f
     case None => {
-      Console.err.println("ERROR: frame not found: ", time)
+      Info("ERROR: frame not found: ", time toString)
       frames.head
     }
   }

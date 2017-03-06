@@ -37,7 +37,7 @@ case class Angle(radian: Double) {
         else false
     def unary_- = Radian(-radian)
     def degree: Double = radian / Pi * 180
-    override def toString = degree.toString + "degree"
+    override def toString = degree.toString + "°"
 }
 
 object Degree {
@@ -470,17 +470,19 @@ case class Pilot0(pod: Pod) extends Pilot {
 case class Pod(
     val position: Point,
     val destination: Point,
-    val angleToDest: Angle,
+    val orientation: Point,
     val speed: Point) {
+
+    def angleToDest = orientation.radianWith(destination - position)
 
     def podSize = 400
 
     def speedAngleToDest = speed.radianFrom(destinationDirection)
 
-    override def toString =  "distance: " + distance +
+    override def toString =  "position: " + position +
         "\ndestination: " + destination +
         "\nangleToDest: " + angleToDest +
-        "\nspeed: " + speed.norm
+        "\nspeed norm: " + speed.norm
 
     val checkpointRadius = 600
     val podRadius = 600
@@ -517,7 +519,6 @@ case class Pod(
     def nextDestination(race: Race): Point = race.nextCheckpoint(destination)
 
     lazy val destinationDirection = (destination - position).normalize
-    def orientation = destinationDirection.rotate(angleToDest)
 
     def score(race: Race): Int = race.score(this)
     def boostAvailable(race: Race) = {
@@ -548,14 +549,13 @@ case class Pod(
     def updateDirection(dir: Point): Pod = {
       val expectedOrientation = (dir - position).normalize
       val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
-      val newAngleToDest = orientation.radianWith(destination)
-      Pod(position, destination, newAngleToDest, speed)
+      Pod(position, destination, newOrientation.normalize, speed)
     }
 
     def updateSpeed(t: Double): Pod =
-           Pod(position, destination, angleToDest, speed * 0.85 + orientation * t)
+           Pod(position, destination, orientation, speed * 0.85 + orientation * t)
 
-    def updatePosition: Pod = Pod(position + speed, destination, angleToDest, speed)
+    def updatePosition: Pod = Pod(position + speed, destination, orientation, speed)
 
     def update(dir: Point, t: Double) = updateDirection(dir).updateSpeed(t).updatePosition
 }
@@ -700,7 +700,7 @@ object Race {
 
     def test = {
         val l = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
-        val p = Pod(Point(0, 0), Point(0, 0), Degree(0), Point(0, 0))
+        val p = Pod(Point(0, 0), Point(0, 0), Point(0, 0), Point(0, 0))
         val r = Race(List(p, p, p, p), l, 1)
 
         if (r.checkpoints.isEmpty)
@@ -763,9 +763,8 @@ object Player extends App {
             val destinationDirection = (destination - position).normalize
             // first turn the pod orientation change is not limited
             // set it to the destination direction.
-            val angleToDest = if (l == 0) Degree(0)
-                else Point(1, 0).radianFrom(destinationDirection) - Degree(-angle) 
-            Pod(position, destination, angleToDest, Point(vx, -vy))
+            val orientation = Point(1, 0).rotate(Degree(-angle))
+            Pod(position, destination, orientation, Point(vx, -vy))
         }).toList
 
         val race = Race(pods, checkpoints, laps)

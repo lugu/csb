@@ -74,6 +74,7 @@ class Race {
 
   def step() = {
         count += 1
+        Info("race step: " + count)
         val cmds = commands(playerA, podsA, loggerA) ::: commands(playerB, podsB, loggerB)
         pods = updatePods(cmds)
   }
@@ -84,7 +85,7 @@ class Race {
   def initPods = {
     val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
     val positions = List(1, 3, -1, -3).map(pos => checkpoints(0) + departLine * (pos * 450))
-    positions.map(p => Pod(p, checkpoints(1), Degree(0), Point(0, 0)))
+    positions.map(p => Pod(p, checkpoints(1), checkpoints(1) - p, Point(0, 0)))
   }
 
   def updatePods(commands: List[Command]): List[Pod] = {

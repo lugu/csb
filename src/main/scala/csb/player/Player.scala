@@ -115,7 +115,7 @@ case class Point(x: Double, y: Double) {
 
 object Point {
     def apply(a: Int, b: Int): Point = Point(a.toDouble, b.toDouble)
-    
+
     def test = {
         if (Point(0,1) + Point(1, 2) != Point(1, 3))
             throw new Exception("addition failed")
@@ -175,7 +175,7 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
         // correction of the direction takes inertia into account
     def direction = pod.position + 
         ((pilot.direction - pod.position).normalize - pod.speed.normalize * 0.5) * 5000
-        
+
     def thrust = {
         if (pod.badCollision(race.enemy0))
             shield
@@ -184,16 +184,19 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
         else
             min(thrustCorrection, pilot.thrust)
     }
-    
+
     def thrustCorrection = {
         val maxAngle = Degree(18)
         val minAngle = Degree(90)
         val minSpeed = 60
-        
+
         val directionToDestinationAngle =
                 (pod.destination - pod.position).radianWith(pilot.direction - pod.position)
         val directionToOrientationAngle = pod.angleToDest + directionToDestinationAngle 
-        
+
+        Print("directionToDestinationAngle ", directionToDestinationAngle)
+        Print("directionToOrientationAngle ", directionToOrientationAngle)
+
         if (pod.badCollision(race.enemy0))
             shield
         else if (pod.badCollision(race.enemy1))
@@ -213,13 +216,13 @@ object Pilot {
 }
 
 case class MetaPilot(pod: Pod, race: Race) extends Pilot {
-    
+
     def direction = pilot.direction
     def thrust = pilot.thrust
     def label = pilot.label
 
     val friend = race.friend(pod)
-    
+
     val pilot: Pilot = PilotCorrected(chooseAvoid
              .getOrElse(chooseFight
              .getOrElse(chooseDefense
@@ -227,11 +230,11 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
              .getOrElse(chooseSkip
              .getOrElse(choosePilot1
              .getOrElse(Pilot0(pod))))))), pod, race)
-    
+
     val init = {
         Print(this)
     }
-    
+
     override def toString = pod.toString
     // override def toString = pod.toString +
     //     "\ndirection to destination angle: " +
@@ -249,7 +252,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
             Some(PilotDefense(pod))
         else None
     }
-    
+
     def chooseAttack: Option[Pilot] = {
         val someSpeed = 200
         val e = race.enemies.filter(o => pod.detectCollision(o))
@@ -257,7 +260,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
             Some(PilotAttack(pod, e.head))
         else None
     }
-    
+
     def fightCondition: Boolean = {
         // Print("Last turn? ", race.isLastTurn)
         // if (!pod.isLeader(race) && race.isLastTurn &&
@@ -266,27 +269,26 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
         // FIXME:
         false
     }
-                
+
     def chooseNone: Option[Pilot] = None
-    
+
     def chooseFight: Option[Pilot] =
         if (fightCondition) {
             Some(PilotFight(pod, race, race.enemyLeader))
-            
         } else None
-            
+
     def chooseAvoid: Option[Pilot] = {
         if (pod.score(race) > 1 && pod.detectCollision(friend) && 
                 race.compareScore(pod, race.friend(pod)) == friend)
             Some(PilotAvoid(pod, friend))
         else None
     }
-    
+
     // choose boost for the longest distance
     def chooseBoost: Option[Pilot] = {
         val smallAngle = Degree(30)
         val longDistance = 4000
-        
+
         if (pod.boostCollide(race.friend(pod)) ||
                 pod.boostCollide(race.enemy0) ||
                 pod.boostCollide(race.enemy1)) None
@@ -298,7 +300,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
             Some(PilotBoost(pod))
         } else None
     }
-        
+
     // do not choose skip if a collision is detected
     def chooseSkip: Option[Pilot] = {
         val skipAngle = Degree(30)
@@ -312,7 +314,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
                 pod.speed.norm > skipSpeed) Some(PilotSkip(pod, race))
         else None
     }
-        
+
     def choosePilot1: Option[Pilot] = {
         val directDistance = 5000
         if (pod.distance > directDistance) Some(Pilot1(pod, race))
@@ -330,15 +332,15 @@ case class PilotHit(pod: Pod, race: Race, enemy: Pod) extends Pilot {
         } else 200
     // case 1: i am in front of the enemy
     // case 2: i am behind the enemy
-    
+
     def direction1 = enemy.position + (enemy.speed * 2)
-    
+
     // direction is the point in the middle of the next checkpoint
     // compute the distance between the enemy and his checkpoint
     // add this distance the 
     def direction2 = enemy.destination +
             (enemy.nextDestination(race) - enemy.destination).normalize * enemy.distance
-            
+
     def direction = if(pod.position.distanceTo(enemy.destination) < enemy.distance)
             direction1 else direction2
 }
@@ -347,27 +349,29 @@ case class PilotWait(pod: Pod, race: Race, checkpoint: Point) extends Pilot {
     def previousCheckpoint = race.previousCheckpoint(checkpoint)
     def directionToPrevious = (previousCheckpoint - checkpoint).normalize 
     val position = checkpoint + (directionToPrevious * (pod.checkpointRadius * 2))
-    
+
     val dist = max(pod.position.distanceTo(position) - pod.podRadius, 0)
     val smallDistance = 2500
-    
+
     def label = "WAIT"
     def direction = position
     def thrust = {
         val t = if (dist > smallDistance) 200 else (dist / smallDistance) * 200
+        Print("dis " + dist)
+        Print("thrust " + t)
         t
     }
 }
 
 case class PilotAvoid(pod: Pod, other: Pod) extends Pilot {
     def label = "AVOID"
-    
+
     def distanceBeforeMove = pod.position.distanceTo(other.position + other.speed)
     def distanceAfterMove = (pod.position + pod.speed).distanceTo(other.position + other.speed)
 
     // goal: direction opposite to the other
     def direction = pod. position + (other.position - pod.position).rotate(Degree(90))
-    
+
     def thrust = if (distanceBeforeMove > distanceAfterMove) 0 else 200
 }
 
@@ -381,12 +385,12 @@ case class PilotFight(pod: Pod, race: Race, enemy: Pod) extends Pilot {
                             PilotWait(pod, race, enemy.destination)
                         else
                             PilotWait(pod, race, enemy.nextDestination(race))
-    
+
     def direction = pilot.direction
     def thrust = pilot.thrust
     def label = pilot.label
 }
-                            
+
 case class PilotDefense(pod: Pod) extends Pilot {
     def direction = pod.destination
     def thrust = shield
@@ -417,18 +421,18 @@ case class PilotSkip(pod: Pod, race: Race) extends Pilot {
 // move your previous destination in the direction of the goal
 // if turn angle > some value then stop the motors
 case class Pilot3(pod: Pod, race: Race) extends Pilot {
-    
+
     val skidAngle = Degree(30)
     val skidSpeed = 250
-    
+
     val shallSkid: Boolean = if (pod.stepsToDestination < 4 &&
         pod.speedAngleToDest < skidAngle &&
         pod.speed.norm > skidSpeed) true else false
-        
+
     def skidDirection = pod.position + (pod.nextDestination(race) - pod.destination).normalize
- 
+
     def direction = if (shallSkid) skidDirection else pod.innerDirection(race)
-    
+
     def thrust = 200
     def label = "PILOT3"
 }
@@ -452,7 +456,7 @@ case class Pilot1(pod: Pod, race: Race) extends Pilot {
         val objective = (pod.destination - pod.position).rotate(newAngle)
         pod.position + objective
     }
-        
+
     def thrust = 200
     def label = "PILOT1"
 }
@@ -468,16 +472,16 @@ case class Pod(
     val destination: Point,
     val angleToDest: Angle,
     val speed: Point) {
-        
+
     def podSize = 400
-    
+
     def speedAngleToDest = speed.radianFrom(destinationDirection)
-    
+
     override def toString =  "distance: " + distance +
         "\ndestination: " + destination +
         "\nangleToDest: " + angleToDest +
         "\nspeed: " + speed.norm
-    
+
     val checkpointRadius = 600
     val podRadius = 600
     def stepsToDestination = ((distance - checkpointRadius)/ speed.norm).toInt
@@ -488,37 +492,42 @@ case class Pod(
         val dist = (position + speed).distanceTo(other.position + other.speed)
         if (dist < podSize * 2 + extra) true else false
     }
-        
+
     // bad collision is a collision that oppose the pod speed
     // 1. is the other in front of the speed
     def badCollision(other: Pod) = {
         if (detectCollision(other)) {
-            
+
             val otherDirection = ((other.position + other.speed) - (position + speed))
             val collisionAngleToSpeed = speed.radianWith(otherDirection)
             val speedAngle = speed.radianWith(other.speed)
-            
+
+            Print("speed " + speed)
+            Print("otherDirection " + otherDirection)
+            Print("collisionAngleToSpeed " + collisionAngleToSpeed)
+            Print("speedAngle " + speedAngle)
+
             if (collisionAngleToSpeed < Degree(45) && speedAngle > Degree(45)) true
             else false
         } else false
     }
-        
+
     lazy val distance = position.distanceTo(destination)
-    
+
     def nextDestination(race: Race): Point = race.nextCheckpoint(destination)
-    
+
     lazy val destinationDirection = (destination - position).normalize
-    def orientation = destinationDirection.rotate(-angleToDest)
-    
+    def orientation = destinationDirection.rotate(angleToDest)
+
     def score(race: Race): Int = race.score(this)
     def boostAvailable(race: Race) = {
         race.boostAvailable(this)
     }
     def useBoost(race: Race) = race.useBoost(this)
-    
+
     def checkSpeedCheckpoint(checkpoint: Point): Boolean =
         Pod.distanceToLine(position, speed, checkpoint) < checkpointRadius
-    
+
     def innerDirection(race: Race) = {
         val a = position - destination
         val b = nextDestination(race) - destination
@@ -526,9 +535,9 @@ case class Pod(
         def innerVector = a.rotate(turnAngle * 0.25)
         destination + innerVector * (3 * speed.norm)
     }
-    
+
     def isLeader(race: Race): Boolean = (race.myLeader == this)
-    
+
     def boostCollide(other: Pod): Boolean = {
         val p = position
         val u = speed
@@ -548,16 +557,17 @@ case class Pod(
 
     def updatePosition: Pod = Pod(position + speed, destination, angleToDest, speed)
 
+    def update(dir: Point, t: Double) = updateDirection(dir).updateSpeed(t).updatePosition
 }
 
 object Pod {
-    
+
     def distanceToLine(linePoint: Point, lineDirection: Point, testPoint: Point): Double =
         List(linePoint, lineDirection, testPoint) match {
             case List(Point(x, y), Point(u, v), Point(a, b)) =>
                 abs(v*a - u*b -v*x + u*y) / sqrt(v*v + u*u)
         }
-        
+
     def test = {
         if (distanceToLine(Point(0, 0), Point(1, 1), Point(3, 3)) != 0)
              throw new Exception("should found zero")
@@ -578,16 +588,16 @@ case class Race(
     val pods: List[Pod],
     val checkpoints: List[Point],
     val laps: Int) {
-    
+
     def pod0 = pods(0)
     def pod1 = pods(1)
-    
+
     def enemies = pods.slice(2, 4)
     def enemy0 = pods(2)
     def enemy1 = pods(3)
-        
+
     def friend(me: Pod) = if (me == pod0) pod1 else pod0
-    
+
     def score(p: Pod): Int = {
         val podIndex = pods.indexOf(p)
         if (Race.podCheckpoints(podIndex) != p.destination) {
@@ -596,27 +606,27 @@ case class Race(
         }
         Race.podScores(podIndex)
     }
-    
+
     def compareScore(a: Pod, b: Pod) = if (a.score(this) > b.score(this)) a
         else if (a.score(this) < b.score(this)) b
         else if (a.distance < b.distance ) a else b
-                    
+
     def myLeader = compareScore(pod0, pod1)
     def enemyLeader = compareScore(enemy0, enemy1)
-    
+
     def isLastTurn = {
         val checkpointNb = checkpoints.size    
         val scoreMax = Race.podScores.valuesIterator.max - 1
         val lap = (scoreMax / checkpointNb).toInt
         if (lap == laps - 1) true else false
     }
-    
+
     val updateScores = {
         pods.foreach(score(_))
     }
-    
+
     val pilots: List[Pilot] = List(Pilot(pod0, this), Pilot(pod1, this))
-    
+
     def commands =  {
         pilots.map(_.command)
     }
@@ -624,11 +634,11 @@ case class Race(
     def output() =  {
         pilots.map(_.answer).foreach(println)
     }
-    
+
     def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {
             case (target, index) => target == p
         }.head._2
-        
+
     lazy val boostCheckpoint: Point = {
         val loop = checkpoints ::: List(checkpoints.head)
         val maxDist = loop.sliding(2).toList.map {
@@ -638,7 +648,7 @@ case class Race(
             case List(a, b) => a.distanceTo(b) == maxDist
         }.toList.head(1)
     }
-    
+
     def previousCheckpoint(p: Point): Point = {
         val loop = checkpoints ::: List(checkpoints.head)
         val found: List[Point] = loop.sliding(2).toList.filter {
@@ -678,20 +688,21 @@ case class Race(
 }
 
 object Race {
-    
+
     var podScores =
         scala.collection.mutable.HashMap[Int,Int](0 -> 0, 1 -> 0, 2 -> 0, 3 -> 0)
-        
+
     var podCheckpoints =
         scala.collection.mutable.HashMap[Int,Point](0 -> Point(0, 0), 1 -> Point(0, 0), 2 -> Point(0, 0), 3 -> Point(0, 0))
-        
+
     var boostAvailable =
         scala.collection.mutable.HashMap[Int,Boolean](0 -> true, 1 -> true)
-    
+
     def test = {
         val l = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
-        val r = Race(List(), l, 1)
-        
+        val p = Pod(Point(0, 0), Point(0, 0), Degree(0), Point(0, 0))
+        val r = Race(List(p, p, p, p), l, 1)
+
         if (r.checkpoints.isEmpty)
          throw new Exception("initial value not empty")
         if (r.nextCheckpoint(l(0)) != l(1))
@@ -727,12 +738,12 @@ case class Player(checkpoints: List[Point], laps: Int) {
  * the standard input according to the problem statement.
  **/
 object Player extends App {
-    
+
     Angle.test
     Point.test
     Race.test
     Pod.test
-    
+
     val Array(laps) = for(i <- readLine split " ") yield i.toInt
     val Array(checkpointNb) = for(i <- readLine split " ") yield i.toInt
     val checkpoints: List[Point] = (for (i <- 1 to checkpointNb) yield {
@@ -743,7 +754,7 @@ object Player extends App {
 
     // game loop
     for (l <- Stream.from(0)) {
-        
+
         val pods: List[Pod] = (for (i <- 1 to 4) yield {
             val Array(x, y, vx, vy, angle, index) = for(i <- readLine split " ") yield i.toInt
             // reverse Y coordinate as the input are non cartesian
@@ -756,9 +767,9 @@ object Player extends App {
                 else Point(1, 0).radianFrom(destinationDirection) - Degree(-angle) 
             Pod(position, destination, angleToDest, Point(vx, -vy))
         }).toList
-        
+
         val race = Race(pods, checkpoints, laps)
-        
+
         race.output()
     }
 }

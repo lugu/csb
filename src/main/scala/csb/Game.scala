@@ -92,10 +92,10 @@ class Race {
 
     pods.toList.zip(commands).map {
       case (pod: Pod, Command(direction, thrust)) =>
-        pod.updateDirection(direction).updateSpeed(thrust).updatePosition
+        pod.update(direction, thrust)
     }
   }
-  
+
   val loggers = List(new Logger(), new Logger(), Info.logger)
 }
 
@@ -228,7 +228,7 @@ case class FrameTimeline(frames: Stream[Frame]) extends Timeline {
   }
   def previousTime: Int = if (time == 0) 0
       else frames.takeWhile(f => f.time < time).last.time
-  
+
   def frame: Frame = frames.find(f => f.time == time) match {
     case Some(f) => f
     case None => {

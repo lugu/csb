@@ -562,6 +562,8 @@ case class Pod(
         if (Pod.distanceToLine(p, u, t) < podRadius) true else false
     }
 
+    def updateDestination(dest: Point) = Pod(position, dest, orientation, speed)
+
     def update(dir: Point, t: Double) = {
         val expectedOrientation = (dir - position).normalize
         Print("orientation norm: " + orientation.norm)
@@ -571,6 +573,8 @@ case class Pod(
         val newSpeed = speed + newOrientation * t
         Pod((position + newSpeed).round, destination, newOrientation, (newSpeed * 0.85).floor)
     }
+
+    def hasArrived: Boolean = (position - destination).norm <= checkpointRadius
 }
 
 object Pod {

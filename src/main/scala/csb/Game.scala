@@ -58,7 +58,7 @@ class Race {
   val players = for (i <- 0 to 2) yield Player(checkpoints.toList, laps)
 
   var count = 0
-  def hasNextStep: Boolean = (count < 10) // FIXME: find better terminaison condition
+  def hasNextStep: Boolean = (count < 50) // FIXME: find better terminaison condition
 
   def playerA = players(0)
   def playerB = players(1)
@@ -85,7 +85,7 @@ class Race {
   def initPods = {
     val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
     val positions = List(1, 3, -1, -3).map(pos => checkpoints(0) + departLine * (pos * 450))
-    positions.map(p => Pod(p, checkpoints(1), checkpoints(1) - p, Point(0, 0)))
+    positions.map(p => Pod(p, checkpoints(1), (checkpoints(1) - p).normalize, Point(0, 0)))
   }
 
   def updatePods(commands: List[Command]): List[Pod] = {
@@ -94,7 +94,7 @@ class Race {
     pods.toList.zip(commands).map {
       case (pod: Pod, Command(direction, thrust)) =>
         pod.update(direction, thrust)
-    }
+    }.map(p => if (p.hasArrived) p.updateDestination(checkpoints(2)) else p)
   }
 
   val loggers = List(new Logger(), new Logger(), Info.logger)

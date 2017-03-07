@@ -111,6 +111,8 @@ case class Point(x: Double, y: Double) {
         val sa = sin(angle.radian)
         Point(ca*x - sa*y, sa*x + ca*y)
     }
+    def round = Point(x.round, y.round)
+    def floor = Point(x.floor, y.floor)
 }
 
 object Point {
@@ -159,15 +161,24 @@ trait Pilot {
     def label: String
     def command = Command(direction, thrust)
     def answer: String = {
-        val t = thrust.toInt
+        val t = thrust.round.toInt
         val s = if (t == boost) "BOOST" 
                 else if (t == shield) "SHIELD"
                 else if (t == thrustMax) "200"
                 else t.toString
-        val Array(x, y) = direction.toInt
+        val x: Int = direction.x.round.toInt
+        val y: Int = direction.y.round.toInt
         // reverse Y coordinate as the input are non cartesian
         "" + x + " " + (-y) + " " + s + " " + s + " " + label
     }
+}
+
+case class PilotTest(pod: Pod) extends Pilot {
+    def label = "TEST"
+    def direction = pod.position + (pod.orientation * 1000) + Point(-100, 0)
+    def thrust = 100
+    Print(">>> Current pod: " + pod)
+    Print(">>> Next pod: " + pod.update(direction, thrust))
 }
 
 case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
@@ -223,13 +234,16 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
 
     val friend = race.friend(pod)
 
-    val pilot: Pilot = PilotCorrected(chooseAvoid
+    val pilot: Pilot = {
+        PilotCorrected(chooseAvoid
              .getOrElse(chooseFight
              .getOrElse(chooseDefense
              .getOrElse(chooseBoost
              .getOrElse(chooseSkip
              .getOrElse(choosePilot1
              .getOrElse(Pilot0(pod))))))), pod, race)
+        PilotTest(pod)
+    }
 
     val init = {
         Print(this)
@@ -481,7 +495,9 @@ case class Pod(
 
     override def toString =  "position: " + position +
         "\ndestination: " + destination +
+        "\norientation: " + orientation +
         "\nangleToDest: " + angleToDest +
+        "\nspeed: " + speed +
         "\nspeed norm: " + speed.norm
 
     val checkpointRadius = 600
@@ -546,18 +562,15 @@ case class Pod(
         if (Pod.distanceToLine(p, u, t) < podRadius) true else false
     }
 
-    def updateDirection(dir: Point): Pod = {
-      val expectedOrientation = (dir - position).normalize
-      val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
-      Pod(position, destination, newOrientation.normalize, speed)
+    def update(dir: Point, t: Double) = {
+        val expectedOrientation = (dir - position).normalize
+        Print("orientation norm: " + orientation.norm)
+        Print("expected orientation: " + expectedOrientation)
+        val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
+        Print("new orientation norm: " + newOrientation.norm)
+        val newSpeed = speed + newOrientation * t
+        Pod((position + newSpeed).round, destination, newOrientation, (newSpeed * 0.85).floor)
     }
-
-    def updateSpeed(t: Double): Pod =
-           Pod(position, destination, orientation, speed * 0.85 + orientation * t)
-
-    def updatePosition: Pod = Pod(position + speed, destination, orientation, speed)
-
-    def update(dir: Point, t: Double) = updateDirection(dir).updateSpeed(t).updatePosition
 }
 
 object Pod {

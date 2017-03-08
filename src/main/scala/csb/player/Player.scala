@@ -602,7 +602,7 @@ object Pod {
 }
 
 case class Race(
-    var pods: List[Pod],
+    val pods: List[Pod],
     val checkpoints: List[Point],
     val laps: Int) {
 
@@ -616,6 +616,8 @@ case class Race(
     def enemy1 = pods(3)
 
     def friend(me: Pod) = if (me == pod0) pod1 else pod0
+
+    def inverted: Race = Race(pods.slice(2, 4) ::: pods.slice(0, 2), checkpoints, laps)
 
     def score(p: Pod): Int = {
         val podIndex = pods.indexOf(p)
@@ -638,18 +640,6 @@ case class Race(
         val scoreMax = Race.podScores.valuesIterator.max - 1
         val lap = (scoreMax / checkpointNb).toInt
         if (lap == laps - 1) true else false
-    }
-
-    val updateScores = {
-        pods.foreach(score(_))
-    }
-
-    val pilots: List[Pilot] = List(Pilot(pod0, this), Pilot(pod1, this))
-
-    def commands = pilots.map(_.command)
-
-    def output() =  {
-        pilots.map(_.answer).foreach(println)
     }
 
     def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {
@@ -703,11 +693,12 @@ case class Race(
     def useBoost(pod: Pod) = 
         Race.boostAvailable(if (pod == pod0) 0 else 1) = false
 
-  def simulatedPods(commands: List[Command]): List[Pod] = {
-    pods.zip(commands).map {
+  def simulate(commands: List[Command]): Race = {
+    val p = pods.zip(commands).map {
       case (pod: Pod, Command(direction, thrust)) =>
         pod.update(direction, thrust)
     }.map(p => if (p.hasArrived) p.updateDestination(checkpoints(2)) else p)
+    Race(p, checkpoints, laps)
   }
 }
 
@@ -759,15 +750,19 @@ object Print {
   }
 }
 
-case class Player(checkpoints: List[Point], laps: Int) {
-   def commands(pods: List[Pod]): List[Command] =
-     Race(pods, checkpoints, laps).commands
+case class Player(var race: Race) {
+
+  val pilots: List[Pilot] = List(Pilot(race.pod0, race), Pilot(race.pod1, race))
+
+  def commands = pilots.map(_.command)
+
+  def output() = pilots.map(_.answer).foreach(println)
+
+  def update(r: Race) = {
+    var race = r
+  }
 }
 
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
 object Player extends App {
 
     Angle.test
@@ -800,6 +795,7 @@ object Player extends App {
 
         val race = Race(pods, checkpoints, laps)
 
-        race.output()
+        val player = Player(race)
+        player.output()
     }
 }

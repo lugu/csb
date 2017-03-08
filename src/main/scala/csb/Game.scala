@@ -1,11 +1,10 @@
 package csb
 
 import csb.player.Command
-import csb.player.Degree
 import csb.player.Race
-import csb.player.Player
 import csb.player.Pod
 import csb.player.Point
+import csb.player.Player
 import csb.player.Print
 
 import scala.scalajs.js.annotation.JSExport
@@ -70,7 +69,7 @@ class Logger {
 // Game connect the simulation with the board
 class Game() {
 
-  val race = new Race(initCheckpoints, 3)
+  var race = new Race(initCheckpoints, 3)
 
   val animation = new Animation(FrameTimeline(frames))
 
@@ -80,7 +79,7 @@ class Game() {
   def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
   def actors = logActors ::: podActors
 
-  val players = for (i <- 0 to 2) yield Player(race.checkpoints, race.laps)
+  val players = List(Player(race), Player(race.inverted))
   def playerA = players(0)
   def playerB = players(1)
 
@@ -88,12 +87,10 @@ class Game() {
   def loggerA = loggers(0)
   def loggerB = loggers(1)
 
-  def podsA = race.pods
-  def podsB = (race.pods.slice(2, 4) ::: race.pods.slice(0, 2))
-
-  def commands(player: Player, pods: Seq[Pod], logger: Logger): List[Command] = {
+  def commands(player: Player, logger: Logger): List[Command] = {
         Print.setPrinter { message => logger(message) }
-        player.commands(race.pods)
+        player.commands
+        player.commands
   }
 
   def initCheckpoints() =
@@ -106,8 +103,9 @@ class Game() {
         count += 1
         Info("race step: " + count)
         race.pods.foreach(Print(_))
-        val cmds = commands(playerA, podsA, loggerA) ::: commands(playerB, podsB, loggerB)
-        race.pods = race.simulatedPods(cmds)
+        val cmds = commands(playerA, loggerA) ::: commands(playerB, loggerB)
+        race = race.simulate(cmds)
+        players.foreach(_.update(race))
   }
 
   def frames: Stream[Frame] = {

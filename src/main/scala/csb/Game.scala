@@ -46,10 +46,9 @@ case class Pixel(x: Int, y: Int) {
     def toPoint = Point(x * Board.width / Screen.width, - y * Board.width / Screen.width)
 }
 
-object Info {
-  val logger = new Logger()
-  def apply(message: String) = logger.print(message)
-  def apply(messages: Object*) = logger(messages)
+object Logger {
+  val default = new Logger()
+  Logger.default.makeDefault()
 }
 
 class Logger {
@@ -62,19 +61,16 @@ class Logger {
   def print(msg: String): Unit = {
     data = data :+ msg
   }
-  def apply(messages: Object*) = print(messages.mkString(" "))
+  def makeDefault() = Print.setPrinter { message => print(message) }
 }
 
 // Game connect the simulation with the board
 class Game() {
 
+  var count = 0
   var race = new Race(initCheckpoints, 3)
+  val loggers = List(new Logger(), new Logger(), Logger.default)
 
-  val players = List(Player(race), Player(race.inverted))
-  def playerA = players(0)
-  def playerB = players(1)
-
-  val loggers = List(new Logger(), new Logger(), Info.logger)
   def loggerA = loggers(0)
   def loggerB = loggers(1)
 
@@ -85,10 +81,16 @@ class Game() {
   def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
   def actors = logActors ::: podActors
 
-  def commands(player: Player, logger: Logger): List[Command] = {
-        Print.setPrinter { message => logger(message) }
-        player.commands
-        player.commands
+  def commands = {
+      val cmds = {
+        loggerA.makeDefault()
+        Player(race).commands
+      } ::: {
+        loggerB.makeDefault()
+        Player(race.inverted).commands
+      }
+      Logger.default.makeDefault()
+      cmds
   }
 
   def initCheckpoints() =
@@ -96,18 +98,16 @@ class Game() {
 
   def isFinished: Boolean = (count < 50) // FIXME: find better terminaison condition
 
-  var count = 0
   def step() = {
         count += 1
-        Info("race step: " + count)
+        Print("race step: " + count)
         race.pods.foreach(Print(_))
-        val cmds = commands(playerA, loggerA) ::: commands(playerB, loggerB)
-        race = race.simulate(cmds)
-        players.foreach(_.update(race))
+        race = race.simulate(commands)
   }
 
   def frames: Stream[Frame] = {
       if (count == 0) {
+        race.pods.foreach(Print(_))
         val head = Frame(count, actors)
         step()
         if (isFinished) head #:: Frame(count, actors) #:: frames
@@ -149,13 +149,16 @@ trait Actor {
 }
 
 case class Terminal(element: html.Span) {
-  def clear = while(element.hasChildNodes) element.removeChild(element.firstChild)
-  def format(message: String) = {
+  def clear = {
     import scalatags.JsDom.all._
-    ul(message.split("\n").map(li(_))).render
+    while(element.hasChildNodes) element.removeChild(element.firstChild)
+    element.appendChild(ul().render)
+  }
+  def format(message: String) = {
   }
   def print(message: String) = {
-    element.appendChild(format(message))
+    import scalatags.JsDom.all._
+    message.split("\n").foreach(m => element.firstChild.appendChild(li(m).render))
   }
 }
 
@@ -206,7 +209,7 @@ case class FrameTimeline(frames: Stream[Frame]) extends Timeline {
   def frame: Frame = frames.find(f => f.time == time) match {
     case Some(f) => f
     case None => {
-      Info("ERROR: frame not found: ", time toString)
+      Print("ERROR: frame not found: ", time toString)
       frames.head
     }
   }

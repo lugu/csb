@@ -15,10 +15,9 @@
   float:left;
 }
 #canvas {
-   
 }
 .terminal {
-  font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+  font-family:monospace;
 }
 ul {
   list-style: none;
@@ -30,7 +29,9 @@ ul li:before {
 
 </style>
 <div style="display:flex">
-<canvas class="terminal" style="display:inline-block;background-image:url('board.png');" id="canvas" width="860" height="484"/></canvas>
+<span class="terminal">
+<canvas style="background-image:url('board.png');" id="canvas" width="860" height="484"/></canvas>
+</span>
 <span class="terminal" id="terminal0" > </span>
 </div>
 

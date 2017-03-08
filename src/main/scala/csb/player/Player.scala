@@ -177,8 +177,8 @@ case class PilotTest(pod: Pod) extends Pilot {
     def label = "TEST"
     def direction = pod.position + (pod.orientation * 1000) + Point(-100, 0)
     def thrust = 100
-    Print(">>> Current pod: " + pod)
-    Print(">>> Next pod: " + pod.update(direction, thrust))
+    // Print(">>> Current pod: " + pod)
+    // Print(">>> Next pod: " + pod.update(direction, thrust))
 }
 
 case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
@@ -205,8 +205,8 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
                 (pod.destination - pod.position).radianWith(pilot.direction - pod.position)
         val directionToOrientationAngle = pod.angleToDest + directionToDestinationAngle 
 
-        Print("directionToDestinationAngle ", directionToDestinationAngle)
-        Print("directionToOrientationAngle ", directionToOrientationAngle)
+        // Print("directionToDestinationAngle ", directionToDestinationAngle)
+        // Print("directionToOrientationAngle ", directionToOrientationAngle)
 
         if (pod.badCollision(race.enemy0))
             shield
@@ -242,11 +242,10 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
              .getOrElse(chooseSkip
              .getOrElse(choosePilot1
              .getOrElse(Pilot0(pod))))))), pod, race)
-        PilotTest(pod)
     }
 
     val init = {
-        Print(this)
+        // Print(this)
     }
 
     override def toString = pod.toString
@@ -270,7 +269,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
     def chooseAttack: Option[Pilot] = {
         val someSpeed = 200
         val e = race.enemies.filter(o => pod.detectCollision(o))
-        if (!e.isEmpty && pod.score(race) < friend.score(race))
+        if (!e.isEmpty && pod.score > friend.score)
             Some(PilotAttack(pod, e.head))
         else None
     }
@@ -292,7 +291,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
         } else None
 
     def chooseAvoid: Option[Pilot] = {
-        if (pod.score(race) > 1 && pod.detectCollision(friend) && 
+        if (!race.isFirstTurn && pod.detectCollision(friend) && 
                 race.compareScore(pod, race.friend(pod)) == friend)
             Some(PilotAvoid(pod, friend))
         else None
@@ -306,11 +305,10 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
         if (pod.boostCollide(race.friend(pod)) ||
                 pod.boostCollide(race.enemy0) ||
                 pod.boostCollide(race.enemy1)) None
-        else if (pod.boostAvailable(race) && 
+        else if (pod.boostAvailable && 
                 pod.destination == race.boostCheckpoint &&
                 pod.angleToDest < smallAngle &&
                 pod.distance > longDistance) {
-            pod.useBoost(race)
             Some(PilotBoost(pod))
         } else None
     }
@@ -339,8 +337,7 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
 case class PilotHit(pod: Pod, race: Race, enemy: Pod) extends Pilot {
     def label = "HIT"
     def thrust = if (pod.detectCollision(enemy)) {
-            if (pod.boostAvailable(race)) {
-                pod.useBoost(race)
+            if (pod.boostAvailable) {
                 boost
             } else shield
         } else 200
@@ -392,7 +389,7 @@ case class PilotAvoid(pod: Pod, other: Pod) extends Pilot {
 case class PilotFight(pod: Pod, race: Race, enemy: Pod) extends Pilot {
     val veryLarge = 3000
     val pilot = if (pod.distanceToPod(enemy) < veryLarge ||
-                            enemy.score(race) > race.laps * race.checkpoints.size - 2)
+                            enemy.score > race.laps * race.checkpoints.size - 2)
                         PilotHit(pod, race, enemy)
                     else if (pod.position.distanceTo(enemy.destination) <
                                 pod.position.distanceTo(enemy.nextDestination(race)))
@@ -483,10 +480,14 @@ case class Pilot0(pod: Pod) extends Pilot {
 
 case class Pod(
     val position: Point,
-    val destination: Point,
+    val destinations: List[Point],
     val orientation: Point,
-    val speed: Point) {
+    val speed: Point,
+    val boostAvailable: Boolean) {
 
+    def this(p: Point, d: List[Point], o: Point, s: Point) = this(p, d, o, s, true)
+
+    lazy val destination = destinations.head
     def angleToDest = orientation.radianWith(destination - position)
 
     def podSize = 400
@@ -536,12 +537,6 @@ case class Pod(
 
     lazy val destinationDirection = (destination - position).normalize
 
-    def score(race: Race): Int = race.score(this)
-    def boostAvailable(race: Race) = {
-        race.boostAvailable(this)
-    }
-    def useBoost(race: Race) = race.useBoost(this)
-
     def checkSpeedCheckpoint(checkpoint: Point): Boolean =
         Pod.distanceToLine(position, speed, checkpoint) < checkpointRadius
 
@@ -562,7 +557,12 @@ case class Pod(
         if (Pod.distanceToLine(p, u, t) < podRadius) true else false
     }
 
-    def updateDestination(dest: Point) = Pod(position, dest, orientation, speed)
+    def hasReachDestination: Boolean = !hasFinished && ((position - destination).norm <= checkpointRadius)
+    def hasFinished: Boolean = destinations.isEmpty
+    def score = destinations.length
+
+    def updateDestination: Pod = if (hasReachDestination)
+        Pod(position, destinations.tail, orientation, speed, boostAvailable) else this
 
     def update(dir: Point, t: Double) = {
         val expectedOrientation = (dir - position).normalize
@@ -571,10 +571,9 @@ case class Pod(
         val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
         Print("new orientation norm: " + newOrientation.norm)
         val newSpeed = speed + newOrientation * t
-        Pod((position + newSpeed).round, destination, newOrientation, (newSpeed * 0.85).floor)
+        Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, boostAvailable).updateDestination 
     }
 
-    def hasArrived: Boolean = (position - destination).norm <= checkpointRadius
 }
 
 object Pod {
@@ -606,7 +605,7 @@ case class Race(
     val checkpoints: List[Point],
     val laps: Int) {
 
-    def this(checkpoints: List[Point], laps: Int) = this(Race.initPods(checkpoints), checkpoints, 3)
+    def this(checkpoints: List[Point], laps: Int) = this(Race.initPods(checkpoints, 3), checkpoints, 3)
 
     def pod0 = pods(0)
     def pod1 = pods(1)
@@ -619,28 +618,16 @@ case class Race(
 
     def inverted: Race = Race(pods.slice(2, 4) ::: pods.slice(0, 2), checkpoints, laps)
 
-    def score(p: Pod): Int = {
-        val podIndex = pods.indexOf(p)
-        if (Race.podCheckpoints(podIndex) != p.destination) {
-            Race.podScores(podIndex) += 1
-            Race.podCheckpoints(podIndex) = p.destination
-        }
-        Race.podScores(podIndex)
-    }
-
-    def compareScore(a: Pod, b: Pod) = if (a.score(this) > b.score(this)) a
-        else if (a.score(this) < b.score(this)) b
+    def compareScore(a: Pod, b: Pod) = if (a.score < b.score) a
+        else if (a.score > b.score) b
         else if (a.distance < b.distance ) a else b
 
     def myLeader = compareScore(pod0, pod1)
     def enemyLeader = compareScore(enemy0, enemy1)
 
-    def isLastTurn = {
-        val checkpointNb = checkpoints.size    
-        val scoreMax = Race.podScores.valuesIterator.max - 1
-        val lap = (scoreMax / checkpointNb).toInt
-        if (lap == laps - 1) true else false
-    }
+    def scoreMin = pods.map(_.score).min
+    def isFirstTurn = if (scoreMin >= checkpoints.size * (laps - 1)) true else false
+    def isLastTurn = if (scoreMin <= checkpoints.size) true else false
 
     def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {
             case (target, index) => target == p
@@ -688,34 +675,21 @@ case class Race(
              Point(0, 0)
         }
     }
-    def boostAvailable(pod: Pod) = 
-        Race.boostAvailable(if (pod == pod0) 0 else 1)
-    def useBoost(pod: Pod) = 
-        Race.boostAvailable(if (pod == pod0) 0 else 1) = false
 
   def simulate(commands: List[Command]): Race = {
     val p = pods.zip(commands).map {
       case (pod: Pod, Command(direction, thrust)) =>
         pod.update(direction, thrust)
-    }.map(p => if (p.hasArrived) p.updateDestination(checkpoints(2)) else p)
+    }
     Race(p, checkpoints, laps)
   }
 }
 
 object Race {
 
-    var podScores =
-        scala.collection.mutable.HashMap[Int,Int](0 -> 0, 1 -> 0, 2 -> 0, 3 -> 0)
-
-    var podCheckpoints =
-        scala.collection.mutable.HashMap[Int,Point](0 -> Point(0, 0), 1 -> Point(0, 0), 2 -> Point(0, 0), 3 -> Point(0, 0))
-
-    var boostAvailable =
-        scala.collection.mutable.HashMap[Int,Boolean](0 -> true, 1 -> true)
-
     def test = {
         val l = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
-        val p = Pod(Point(0, 0), Point(0, 0), Point(0, 0), Point(0, 0))
+        val p = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)
         val r = Race(List(p, p, p, p), l, 1)
 
         if (r.checkpoints.isEmpty)
@@ -730,10 +704,11 @@ object Race {
          throw new Exception("index not found 0 ")
     }
 
-  def initPods(checkpoints: List[Point]): List[Pod] = {
+  def initPods(checkpoints: List[Point], laps: Int): List[Pod] = {
+    val destinations = (for (i <- 0 to laps) yield checkpoints).flatten.toList
     val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
     val positions = List(1, 3, -1, -3).map(pos => checkpoints(0) + departLine * (pos * 450))
-    positions.map(p => Pod(p, checkpoints(1), (checkpoints(1) - p).normalize, Point(0, 0)))
+    positions.map(p => Pod(p, destinations, (checkpoints(1) - p).normalize, Point(0, 0), true))
   }
 
 }
@@ -751,16 +726,9 @@ object Print {
 }
 
 case class Player(var race: Race) {
-
-  val pilots: List[Pilot] = List(Pilot(race.pod0, race), Pilot(race.pod1, race))
-
+  var pilots: List[Pilot] = List(Pilot(race.pod0, race), Pilot(race.pod1, race))
   def commands = pilots.map(_.command)
-
   def output() = pilots.map(_.answer).foreach(println)
-
-  def update(r: Race) = {
-    var race = r
-  }
 }
 
 object Player extends App {
@@ -790,7 +758,9 @@ object Player extends App {
             // first turn the pod orientation change is not limited
             // set it to the destination direction.
             val orientation = Point(1, 0).rotate(Degree(-angle))
-            Pod(position, destination, orientation, Point(vx, -vy))
+            // FIXME: compute the rest of the checkpoints
+            // FIXME: compute if boostAvailable is true
+            Pod(position, List(destination), orientation, Point(vx, -vy), true)
         }).toList
 
         val race = Race(pods, checkpoints, laps)

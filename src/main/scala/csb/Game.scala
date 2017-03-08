@@ -2,6 +2,7 @@ package csb
 
 import csb.player.Command
 import csb.player.Degree
+import csb.player.Race
 import csb.player.Player
 import csb.player.Pod
 import csb.player.Point
@@ -46,60 +47,6 @@ case class Pixel(x: Int, y: Int) {
     def toPoint = Point(x * Board.width / Screen.width, - y * Board.width / Screen.width)
 }
 
-// Race holds the state of the simulation
-class Race {
-  val laps = 3
-  val checkpoints: List[Point] = initCheckpoints
-  var pods: List[Pod] = initPods
-
-  def initCheckpoints() =
-        List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
-
-  val players = for (i <- 0 to 2) yield Player(checkpoints.toList, laps)
-
-  var count = 0
-  def hasNextStep: Boolean = (count < 50) // FIXME: find better terminaison condition
-
-  def playerA = players(0)
-  def playerB = players(1)
-  def loggerA = loggers(0)
-  def loggerB = loggers(1)
-  def podsA = pods.toList
-  def podsB = (pods.slice(2, 4).toList ::: pods.slice(0, 2).toList)
-
-  def commands(player: Player, pods: Seq[Pod], logger: Logger): List[Command] = {
-        Print.setPrinter { message => logger(message) }
-        player.commands(pods.toList)
-  }
-
-  def step() = {
-        count += 1
-        Info("race step: " + count)
-        val cmds = commands(playerA, podsA, loggerA) ::: commands(playerB, podsB, loggerB)
-        pods = updatePods(cmds)
-  }
-
-  def podsTeamA = pods.slice(0, 2)
-  def podsTeamB = pods.slice(2, 4)
-
-  def initPods = {
-    val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
-    val positions = List(1, 3, -1, -3).map(pos => checkpoints(0) + departLine * (pos * 450))
-    positions.map(p => Pod(p, checkpoints(1), (checkpoints(1) - p).normalize, Point(0, 0)))
-  }
-
-  def updatePods(commands: List[Command]): List[Pod] = {
-    pods.toList.foreach(Info.logger(_))
-
-    pods.toList.zip(commands).map {
-      case (pod: Pod, Command(direction, thrust)) =>
-        pod.update(direction, thrust)
-    }.map(p => if (p.hasArrived) p.updateDestination(checkpoints(2)) else p)
-  }
-
-  val loggers = List(new Logger(), new Logger(), Info.logger)
-}
-
 object Info {
   val logger = new Logger()
   def apply(message: String) = logger.print(message)
@@ -123,26 +70,56 @@ class Logger {
 // Game connect the simulation with the board
 class Game() {
 
-  val race = new Race()
+  val race = new Race(initCheckpoints, 3)
 
   val animation = new Animation(FrameTimeline(frames))
 
   val controller = new WindowController(animation)
 
   def podActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
-  def logActors = race.loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
+  def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
   def actors = logActors ::: podActors
 
+  val players = for (i <- 0 to 2) yield Player(race.checkpoints, race.laps)
+  def playerA = players(0)
+  def playerB = players(1)
+
+  val loggers = List(new Logger(), new Logger(), Info.logger)
+  def loggerA = loggers(0)
+  def loggerB = loggers(1)
+
+  def podsA = race.pods
+  def podsB = (race.pods.slice(2, 4) ::: race.pods.slice(0, 2))
+
+  def commands(player: Player, pods: Seq[Pod], logger: Logger): List[Command] = {
+        Print.setPrinter { message => logger(message) }
+        player.commands(race.pods)
+  }
+
+  def initCheckpoints() =
+        List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
+
+  def isFinished: Boolean = (count < 50) // FIXME: find better terminaison condition
+
+  var count = 0
+  def step() = {
+        count += 1
+        Info("race step: " + count)
+        race.pods.foreach(Print(_))
+        val cmds = commands(playerA, podsA, loggerA) ::: commands(playerB, podsB, loggerB)
+        race.pods = race.simulatedPods(cmds)
+  }
+
   def frames: Stream[Frame] = {
-      if (race.count == 0) {
-        val head = Frame(race.count, actors)
-        race.step()
-        if (race.hasNextStep) head #:: Frame(race.count, actors) #:: frames
-        else head #:: Frame(race.count, actors) #:: Stream.empty
+      if (count == 0) {
+        val head = Frame(count, actors)
+        step()
+        if (isFinished) head #:: Frame(count, actors) #:: frames
+        else head #:: Frame(count, actors) #:: Stream.empty
       } else {
-        race.step()
-        if (race.hasNextStep) Frame(race.count, actors) #:: frames
-        else Frame(race.count, actors) #:: Stream.empty
+        step()
+        if (isFinished) Frame(count, actors) #:: frames
+        else Frame(count, actors) #:: Stream.empty
     }
   }
 

@@ -602,9 +602,11 @@ object Pod {
 }
 
 case class Race(
-    val pods: List[Pod],
+    var pods: List[Pod],
     val checkpoints: List[Point],
     val laps: Int) {
+
+    def this(checkpoints: List[Point], laps: Int) = this(Race.initPods(checkpoints), checkpoints, 3)
 
     def pod0 = pods(0)
     def pod1 = pods(1)
@@ -644,9 +646,7 @@ case class Race(
 
     val pilots: List[Pilot] = List(Pilot(pod0, this), Pilot(pod1, this))
 
-    def commands =  {
-        pilots.map(_.command)
-    }
+    def commands = pilots.map(_.command)
 
     def output() =  {
         pilots.map(_.answer).foreach(println)
@@ -702,6 +702,13 @@ case class Race(
         Race.boostAvailable(if (pod == pod0) 0 else 1)
     def useBoost(pod: Pod) = 
         Race.boostAvailable(if (pod == pod0) 0 else 1) = false
+
+  def simulatedPods(commands: List[Command]): List[Pod] = {
+    pods.zip(commands).map {
+      case (pod: Pod, Command(direction, thrust)) =>
+        pod.update(direction, thrust)
+    }.map(p => if (p.hasArrived) p.updateDestination(checkpoints(2)) else p)
+  }
 }
 
 object Race {
@@ -731,6 +738,13 @@ object Race {
         if (r.checkpointIndex(l(0)) != 0)
          throw new Exception("index not found 0 ")
     }
+
+  def initPods(checkpoints: List[Point]): List[Pod] = {
+    val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
+    val positions = List(1, 3, -1, -3).map(pos => checkpoints(0) + departLine * (pos * 450))
+    positions.map(p => Pod(p, checkpoints(1), (checkpoints(1) - p).normalize, Point(0, 0)))
+  }
+
 }
 
 case class Command(direction: Point, thrust: Double)

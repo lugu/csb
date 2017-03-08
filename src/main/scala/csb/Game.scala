@@ -79,6 +79,7 @@ class Game() {
   def loggerB = loggers(1)
 
   val animation = new Animation(FrameTimeline(frames))
+  val controller = new WindowController(animation)
 
   def podActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
   def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
@@ -254,3 +255,15 @@ case class Animation(timeline: Timeline) {
   def stepBackward() = jumpTo(timeline.previousTime)
   def stepForward() = jumpTo(timeline.nextTime)
 }
+
+class WindowController(animation: Animation) {
+  def keypress(event: dom.raw.KeyboardEvent) = event.key match {
+    case "PageUp" =>animation.begining()
+    case "PageDown" => animation.end()
+    case "ArrowLeft" =>animation.stepBackward()
+    case "ArrowRight" => animation.stepForward()
+    case " " => animation.playSwitch()
+  }
+  dom.window.addEventListener[dom.raw.KeyboardEvent]("keypress", keypress _)
+}
+

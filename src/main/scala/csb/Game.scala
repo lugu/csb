@@ -53,11 +53,10 @@ object Info {
 }
 
 class Logger {
-  def reset = List()
-  var data: List[String] = reset
+  var data: List[String] = List()
   def flush: List[String] = {
     val ret = data
-    data = reset
+    data = List()
     ret
   }
   def print(msg: String): Unit = {
@@ -71,12 +70,6 @@ class Game() {
 
   var race = new Race(initCheckpoints, 3)
 
-  val animation = new Animation(FrameTimeline(frames))
-
-  def podActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
-  def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
-  def actors = logActors ::: podActors
-
   val players = List(Player(race), Player(race.inverted))
   def playerA = players(0)
   def playerB = players(1)
@@ -84,6 +77,12 @@ class Game() {
   val loggers = List(new Logger(), new Logger(), Info.logger)
   def loggerA = loggers(0)
   def loggerB = loggers(1)
+
+  val animation = new Animation(FrameTimeline(frames))
+
+  def podActors = race.pods.zip(Board.sprites).map{case (pod, sprite) => PodActor(pod, sprite)}
+  def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t)}
+  def actors = logActors ::: podActors
 
   def commands(player: Player, logger: Logger): List[Command] = {
         Print.setPrinter { message => logger(message) }

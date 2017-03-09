@@ -1,8 +1,8 @@
 package csb.player
 
 import math._
-import scala.util._
 import math.{sqrt,pow,cos,sin,atan,Pi}
+import scala.util._
 
 
 // TODO:
@@ -597,6 +597,11 @@ object Pod {
              throw new Exception("should found zero")
         if (distanceToLine(Point(1, 1), Point(2, 4), Point(21, 42)) > 1)
              throw new Exception("should be lower")
+
+        val checkpoints = List(Point(1, 0), Point(1, 1), Point(0, 1), Point(0, 0))
+        val pod = Pod(Point(0, 0), checkpoints, Point(1, 0), Point(0, 0), true)
+        if (pod.boostAvailable == false)
+             throw new Exception("boost should be lower")
     }
 }
 

@@ -1,16 +1,16 @@
 package csb
 
 import csb.player.Command
-import csb.player.Race
+import csb.player.Player
 import csb.player.Pod
 import csb.player.Point
-import csb.player.Player
 import csb.player.Print
+import csb.player.Race
 
-import scala.scalajs.js.annotation.JSExport
 import org.scalajs.dom
-import org.scalajs.dom.html
 import org.scalajs.dom.document
+import org.scalajs.dom.html
+import scala.scalajs.js.annotation.JSExport
 import scala.util.Random
 
 object Screen {

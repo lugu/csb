@@ -490,10 +490,8 @@ case class Pod(
 
   def this(p: Point, d: List[Point], o: Point, s: Point) = this(p, d, o, s, true)
 
-  lazy val destination = destinations.head
+  lazy val destination = if (destinations.isEmpty) position else destinations.head
   def angleToDest = orientation.radianWith(destination - position)
-
-  def podSize = 400
 
   def speedAngleToDest = speed.radianFrom(destinationDirection)
 
@@ -505,14 +503,16 @@ case class Pod(
     "\nspeed norm: " + speed.norm
 
   val checkpointRadius = 600
-  val podRadius = 600
+  val podRadius = 400
+
   def stepsToDestination = ((distance - checkpointRadius) / speed.norm).toInt
   def nextPosition = position + speed
-  def distanceToPod(other: Pod) = nextPosition.distanceTo(other.nextPosition)
+
+  def distanceToPod(other: Pod) = (other.position - position).norm - 2 * podRadius
   def detectCollision(other: Pod) = detectPossibleCollision(other, 200)
   def detectPossibleCollision(other: Pod, extra: Int) = {
     val dist = (position + speed).distanceTo(other.position + other.speed)
-    if (dist < podSize * 2 + extra) true else false
+    if (dist < podRadius * 2 + extra) true else false
   }
 
   // bad collision is a collision that oppose the pod speed
@@ -570,10 +570,7 @@ case class Pod(
 
   def update(dir: Point, t: Double) = {
     val expectedOrientation = (dir - position).normalize
-    Print("orientation norm: " + orientation.norm)
-    Print("expected orientation: " + expectedOrientation)
     val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
-    Print("new orientation norm: " + newOrientation.norm)
     val newSpeed = speed + newOrientation * t
     Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, boostAvailable).updateDestination
   }

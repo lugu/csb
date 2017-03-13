@@ -41,9 +41,11 @@ class PlayerSpec extends FlatSpec with Matchers {
 
   it should "compute its next position based on its current speed" in {
     val podA = Pod(position, checkpoints, orientation, Point(0, 0), true)
-    assert(pod.update(Point(1, 0), 0).position == (pod.position + pod.speed))
-    assert(podA.update(Point(1, 0), 100).position == (pod.position + Point(1, 0).normalize * 100))
-    assert(pod.update(Point(1, 0), 100).position == (pod.position + pod.speed + Point(1, 0).normalize * 100))
+    val command = Command(Point(1, 0), 0, "test")
+    val commandA = Command(Point(1, 0), 100, "test")
+    assert(pod.update(command).position == (pod.position + pod.speed))
+    assert(podA.update(commandA).position == (pod.position + Point(1, 0).normalize * 100))
+    assert(pod.update(commandA).position == (pod.position + pod.speed + Point(1, 0).normalize * 100))
   }
 
   it should "always have boost available" in {

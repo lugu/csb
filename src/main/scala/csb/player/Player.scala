@@ -135,24 +135,10 @@ object Point {
 }
 
 trait Pilot {
-  def boost = -1
-  def shield = -2
-  def thrustMax = -3
   def direction: Point
   def thrust: Double
   def label: String
-  def command = Command(direction, thrust)
-  def answer: String = {
-    val t = thrust.round.toInt
-    val s = if (t == boost) "BOOST"
-    else if (t == shield) "SHIELD"
-    else if (t == thrustMax) "200"
-    else t.toString
-    val x: Int = direction.x.round.toInt
-    val y: Int = direction.y.round.toInt
-    // reverse Y coordinate as the input are non cartesian
-    "" + x + " " + (-y) + " " + s + " " + s + " " + label
-  }
+  def command = Command(direction, thrust, label)
 }
 
 case class PilotTest(pod: Pod) extends Pilot {
@@ -171,9 +157,9 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
 
   def thrust = {
     if (pod.badCollision(race.enemy0))
-      shield
+      Pilot.shield
     else if (pod.badCollision(race.enemy1))
-      shield
+      Pilot.shield
     else
       min(thrustCorrection, pilot.thrust)
   }
@@ -191,9 +177,9 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
     // Print("directionToOrientationAngle ", directionToOrientationAngle)
 
     if (pod.badCollision(race.enemy0))
-      shield
+      Pilot.shield
     else if (pod.badCollision(race.enemy1))
-      shield
+      Pilot.shield
     else if (directionToOrientationAngle < maxAngle) 200
     else if (directionToOrientationAngle > minAngle) minSpeed
     else {
@@ -205,6 +191,9 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
 }
 
 object Pilot {
+  def boost = -1
+  def shield = -2
+  def thrustMax = -3
   def apply(pod: Pod, race: Race): Pilot = MetaPilot(pod, race)
 }
 
@@ -322,9 +311,9 @@ case class PilotHit(pod: Pod, race: Race, enemy: Pod) extends Pilot {
   def label = "HIT"
   def thrust = if (pod.detectCollision(enemy)) {
     if (pod.boostAvailable) {
-      boost
+      Pilot.boost
     }
-    else shield
+    else Pilot.shield
   }
   else 200
   // case 1: i am in front of the enemy
@@ -390,26 +379,26 @@ case class PilotFight(pod: Pod, race: Race, enemy: Pod) extends Pilot {
 
 case class PilotDefense(pod: Pod) extends Pilot {
   def direction = pod.destination
-  def thrust = shield
+  def thrust = Pilot.shield
   def label = "DEFENSE"
 }
 
 case class PilotAttack(pod: Pod, enemy: Pod) extends Pilot {
   def direction = enemy.position + enemy.speed
-  def thrust = shield
+  def thrust = Pilot.shield
   def label = "ATTACK"
 }
 
 case class PilotBoost(pod: Pod) extends Pilot {
   def direction = pod.destination
-  def thrust = boost
+  def thrust = Pilot.boost
   def label = "BOOST"
 }
 
 case class PilotSkip(pod: Pod, race: Race) extends Pilot {
   def label = "SKIP"
   def direction = pod.nextDestination(race)
-  def thrust = thrustMax
+  def thrust = Pilot.thrustMax
 }
 
 // if close enouth from the ckeckpoint, set destination to the vector between the
@@ -551,10 +540,10 @@ case class Pod(
   def updateDestination: Pod = if (hasReachDestination)
     Pod(position, destinations.tail, orientation, speed, boostAvailable) else this
 
-  def update(dir: Point, t: Double) = {
-    val expectedOrientation = (dir - position).normalize
+  def update(command: Command) = {
+    val expectedOrientation = (command.direction - position).normalize
     val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
-    val newSpeed = speed + newOrientation * t
+    val newSpeed = speed + newOrientation * command.thrust
     Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, boostAvailable).updateDestination
   }
 
@@ -669,8 +658,8 @@ case class Race(
 
   def simulate(commands: List[Command]): Race = {
     val p = pods.zip(commands).map {
-      case (pod: Pod, Command(direction, thrust)) ⇒
-        pod.update(direction, thrust)
+      case (pod: Pod, c: Command) ⇒
+        pod.update(c)
     }
     Race(p, checkpoints, laps)
   }
@@ -704,7 +693,19 @@ object Race {
 
 }
 
-case class Command(direction: Point, thrust: Double)
+case class Command(direction: Point, thrust: Double, label: String) {
+  def answer: String = {
+    val t = thrust.round.toInt
+    val s = if (t == Pilot.boost) "BOOST"
+    else if (t == Pilot.shield) "SHIELD"
+    else if (t == Pilot.thrustMax) "200"
+    else t.toString
+    val x: Int = direction.x.round.toInt
+    val y: Int = direction.y.round.toInt
+    // reverse Y coordinate as the input are non cartesian
+    "" + x + " " + (-y) + " " + s + " " + s + " " + label
+  }
+}
 
 object Print {
   var printer: (String) ⇒ Unit = Console.err.println(_)
@@ -719,10 +720,22 @@ object Print {
 case class Player(var race: Race) {
   var pilots: List[Pilot] = List(Pilot(race.pod0, race), Pilot(race.pod1, race))
   def commands = pilots.map(_.command)
-  def output() = pilots.map(_.answer).foreach(println)
 }
 
 case class PodUpdate(position: Point, destination: Point, orientation: Point, speed: Point) 
+
+case class Record(pod: Pod, command: Option[Command])
+case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[Array[Record]]) {
+    def updateWith(record: Array[Record]): RaceRecord = {
+      RaceRecord(laps, checkpoints, steps ::: List(record))
+    }
+    def dump(): Unit = {
+      Print(laps.toString)
+      Print(checkpoints)
+      steps.foreach(Print(_))
+    }
+    def step(i: Int): Race = Race(steps(i).map(_.pod).toList, checkpoints, laps)
+}
 
 object PodUpdate {
   def apply(checkpoints: List[Point]): PodUpdate = {
@@ -758,11 +771,21 @@ object Player extends App {
 
   var race = Race(pods, checkpoints, laps)
 
+  var recorder = RaceRecord(laps, checkpoints, List())
+
   while (!race.isFinished) {
     val player = Player(race)
-    player.output()
+    val commands = player.commands
+    val record = Array(Record(pods(0), Some(commands(0))), Record(pods(1), Some(commands(1))), 
+                      Record(pods(2), None), Record(pods(3), None))
+    recorder = recorder.updateWith(record)
 
-    pods = for (p ← pods) yield { p.updateWith(PodUpdate(checkpoints)) }
-    race = Race(pods, checkpoints, laps)
+    if (race.isFinished) {
+      recorder.dump()
+    } else {
+      commands.foreach(c => println(c.answer))
+      pods = for (p ← pods) yield { p.updateWith(PodUpdate(checkpoints)) }
+      race = Race(pods, checkpoints, laps)
+    }
   }
 }

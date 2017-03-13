@@ -4,23 +4,6 @@ import math._
 import math.{ sqrt, pow, cos, sin, atan, Pi }
 import scala.util._
 
-// TODO:
-// - do not skip when a collision has fucked your trajectory
-// - detect if center at departure to activate the boost
-// - if boost then shield the collision or do not boost
-// - do not attack if speed is null
-// - adjust speed of pilot1 depending on the curve
-//
-//  orientation <----- X Position
-//                 . . | .
-//             .   .   |   .
-//         X Destination     .
-//             .       |       .
-//           .         |         .
-//         .           V speed     X NextCheckPoint
-//       X  Direction
-//
-
 case class Angle(radian: Double) {
   // internal representation in radian from -Pi to Pi.
   def +(other: Angle) = Radian(radian + other.radian)
@@ -575,6 +558,10 @@ case class Pod(
     Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, boostAvailable).updateDestination
   }
 
+  def updateWith(u: PodUpdate): Pod = {
+    val dests = if (u.destination == destination) destinations.tail else destinations
+    Pod(u.position, dests, u.orientation, u.speed, boostAvailable)
+  }
 }
 
 object Pod {
@@ -629,6 +616,7 @@ case class Race(
   def scoreMin = pods.map(_.score).min
   def isFirstTurn = if (scoreMin >= checkpoints.size * (laps - 1)) true else false
   def isLastTurn = if (scoreMin <= checkpoints.size) true else false
+  def isFinished = pods.exists(_.hasFinished)
 
   def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {
     case (target, index) ⇒ target == p
@@ -734,6 +722,20 @@ case class Player(var race: Race) {
   def output() = pilots.map(_.answer).foreach(println)
 }
 
+case class PodUpdate(position: Point, destination: Point, orientation: Point, speed: Point) 
+
+object PodUpdate {
+  def apply(checkpoints: List[Point]): PodUpdate = {
+      val Array(x, y, vx, vy, angle, index) = for (i ← readLine split " ") yield i.toInt
+      // reverse Y coordinate as the input are non cartesian
+      val position = Point(x, -y)
+      val destination = checkpoints(index)
+      val orientation = Point(1, 0).rotate(Degree(-angle))
+      val speed = Point(vx, -vy)
+      PodUpdate(position, destination, orientation, speed)
+  }
+}
+
 object Player extends App {
 
   Angle.test
@@ -749,26 +751,18 @@ object Player extends App {
     Point(checkpointX, -checkpointY)
   }).toList
 
-  // game loop
-  for (l ← Stream.from(0)) {
+  var pods: List[Pod] = (for (i ← 1 to 4) yield {
+    val u = PodUpdate(checkpoints)
+    Pod(u.position, checkpoints, u.orientation, u.speed, true)
+  }).toList
 
-    val pods: List[Pod] = (for (i ← 1 to 4) yield {
-      val Array(x, y, vx, vy, angle, index) = for (i ← readLine split " ") yield i.toInt
-      // reverse Y coordinate as the input are non cartesian
-      val position = Point(x, -y)
-      val destination = checkpoints(index)
-      val destinationDirection = (destination - position).normalize
-      // first turn the pod orientation change is not limited
-      // set it to the destination direction.
-      val orientation = Point(1, 0).rotate(Degree(-angle))
-      // FIXME: compute the rest of the checkpoints
-      // FIXME: compute if boostAvailable is true
-      Pod(position, List(destination), orientation, Point(vx, -vy), true)
-    }).toList
+  var race = Race(pods, checkpoints, laps)
 
-    val race = Race(pods, checkpoints, laps)
-
+  while (!race.isFinished) {
     val player = Player(race)
     player.output()
+
+    pods = for (p ← pods) yield { p.updateWith(PodUpdate(checkpoints)) }
+    race = Race(pods, checkpoints, laps)
   }
 }

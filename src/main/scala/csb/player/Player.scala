@@ -34,39 +34,9 @@ object Angle {
   def fromDegree(angle: Double) = Radian(angle / 180 * Pi)
   def fromRadian(radian: Double): Angle = {
     val r = radian % (2 * Pi)
-    if (r < -Pi) new Angle(r + 2 * Pi)
+    if (r <= -Pi) new Angle(r + 2 * Pi)
     else if (r > Pi) new Angle(r - 2 * Pi)
     else new Angle(r)
-  }
-  def test = {
-    if (Degree(90) != Radian(Pi / 2))
-      throw new Exception("import failed 0")
-    if (Radian(-Pi) != -Radian(Pi))
-      throw new Exception("inverse failed 0")
-    if (Radian(2 * Pi) != Radian(0))
-      throw new Exception("shift failed 0" + Radian(2 * Pi) + " with " + Radian(0))
-    if (Radian(-2 * Pi) != Radian(0))
-      throw new Exception("shift failed 0b")
-    if (Radian(0.5 - 2 * Pi) != Radian(0.5))
-      throw new Exception("shift failed 1")
-    if (Radian(0.5 + 2 * Pi) != Radian(0.5))
-      throw new Exception("shift failed 2")
-    if (Degree(90) != Radian(Pi / 2))
-      throw new Exception("conversion failed 1")
-    if (Degree(360) != Radian(0))
-      throw new Exception("conversion failed 2")
-    if (Degree(180) != Radian(Pi))
-      throw new Exception("conversion failed 3")
-    if (Radian(Pi) + Radian(Pi + 0.5) != Radian(0.5))
-      throw new Exception("addition failed")
-    if (Radian(Pi) - Radian(Pi + 0.5) != Radian(-0.5))
-      throw new Exception("soustraction failed")
-    if (Radian(Pi) < Radian(Pi + 0.5))
-      throw new Exception("comparison failed 1")
-    if (Radian(0) > Radian(0.5))
-      throw new Exception("comparison failed 2")
-    if (Radian(-Pi / 4) > Radian(-Pi / 2))
-      throw new Exception("comparison failed 3")
   }
 }
 
@@ -100,38 +70,6 @@ case class Point(x: Double, y: Double) {
 object Point {
   def apply(a: Int, b: Int): Point = Point(a.toDouble, b.toDouble)
 
-  def test = {
-    if (Point(0, 1) + Point(1, 2) != Point(1, 3))
-      throw new Exception("addition failed")
-    if (Point(0, 1) - Point(1, 2) != Point(-1, -1))
-      throw new Exception("soustraction failed")
-    if (Point(-1, -2) != -Point(1, 2))
-      throw new Exception("inverstion failed")
-    if (Point(1, 2) * 3 != Point(3, 6))
-      throw new Exception("factor failed")
-    if (Point(0, 1).scalar(Point(1, 0)) != 0.0)
-      throw new Exception("scalar failed 0")
-    if (Point(1, 0).scalar(Point(1, 0)) != 1.0)
-      throw new Exception("scalar failed 1")
-    if (Point(0, 0).distanceTo(Point(1, 0)) != 1.0)
-      throw new Exception("distance failed 0")
-    if (Point(0, 3).normalize != Point(0, 1))
-      throw new Exception("normalize failed")
-    if (Point(0, 2).norm != 2.0)
-      throw new Exception("norm failed")
-    if (Point(1, 0).radianFrom(Point(0, 1)) < Radian(1.570))
-      throw new Exception("angle failed 0")
-    if (Point(1, 0).radianFrom(Point(0, 1)) > Radian(1.5708))
-      throw new Exception("angle failed 1")
-    if (Point(0, 1).rotate(Point(0, 1).radianFrom(Point(1, 0))).x < 0.99)
-      throw new Exception("angle failed 2")
-    if (Point(0, 1).rotate(Point(0, 1).radianFrom(Point(1, 0))).x > 1.01)
-      throw new Exception("angle failed 2")
-    if (Point(0, 1).rotate(Point(0, 1).radianFrom(Point(1, 0))).y < -0.01)
-      throw new Exception("angle failed 3")
-    if (Point(0, 1).rotate(Point(0, 1).radianFrom(Point(1, 0))).y > 0.01)
-      throw new Exception("angle failed 4")
-  }
 }
 
 trait Pilot {
@@ -560,21 +498,6 @@ object Pod {
       case List(Point(x, y), Point(u, v), Point(a, b)) ⇒
         abs(v * a - u * b - v * x + u * y) / sqrt(v * v + u * u)
     }
-
-  def test = {
-    if (distanceToLine(Point(0, 0), Point(1, 1), Point(3, 3)) != 0)
-      throw new Exception("should found zero")
-    if (distanceToLine(Point(1, 1), Point(2, 4), Point(3, 5)) != 0)
-      throw new Exception("should found zero")
-    if (distanceToLine(Point(1, 1), Point(2, 4), Point(3, 6)) > 1)
-      throw new Exception("should be lower")
-    if (distanceToLine(Point(1, 1), Point(2, 4), Point(2, 6)) < 0.5)
-      throw new Exception("should be larger")
-    if (distanceToLine(Point(1, 1), Point(2, 4), Point(21, 41)) != 0)
-      throw new Exception("should found zero")
-    if (distanceToLine(Point(1, 1), Point(2, 4), Point(21, 42)) > 1)
-      throw new Exception("should be lower")
-  }
 }
 
 case class Race(
@@ -667,23 +590,6 @@ case class Race(
 
 object Race {
 
-  def test = {
-    val l = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
-    val p = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)
-    val r = Race(List(p, p, p, p), l, 1)
-
-    if (r.checkpoints.isEmpty)
-      throw new Exception("initial value not empty")
-    if (r.nextCheckpoint(l(0)) != l(1))
-      throw new Exception("should found point 1 ")
-    if (r.nextCheckpoint(l(3)) != l(0))
-      throw new Exception("should found point 0 ")
-    if (r.checkpointIndex(l(3)) != 3)
-      throw new Exception("index not found 0 ")
-    if (r.checkpointIndex(l(0)) != 0)
-      throw new Exception("index not found 0 ")
-  }
-
   def initPods(checkpoints: List[Point], laps: Int): List[Pod] = {
     val destinations = (for (i ← 0 to laps) yield checkpoints).flatten.toList
     val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
@@ -750,11 +656,6 @@ object PodUpdate {
 }
 
 object Player extends App {
-
-  Angle.test
-  Point.test
-  Race.test
-  Pod.test
 
   val Array(laps) = for (i ← readLine split " ") yield i.toInt
   val Array(checkpointNb) = for (i ← readLine split " ") yield i.toInt

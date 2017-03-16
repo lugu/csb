@@ -124,6 +124,6 @@ class PlayerSpec extends FlatSpec with Matchers {
   "RaceRecord" should "generate a Race at any step" in {
     val checkpoints = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
     val pods = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)
-    val recored = RaceRecord(1, checkpoints, List())
+    val recorded = RaceRecord(1, checkpoints, List())
   }
 }

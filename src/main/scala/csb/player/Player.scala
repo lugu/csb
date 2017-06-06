@@ -486,7 +486,7 @@ case class Pod(
   }
 
   def updateWith(u: PodUpdate): Pod = {
-    val dests = if (u.destination == destination) destinations.tail else destinations
+    val dests = if (u.destination == destination) destinations else destinations.tail
     Pod(u.position, dests, u.orientation, u.speed, boostAvailable)
   }
 }
@@ -665,9 +665,11 @@ object Player extends App {
     Point(checkpointX, -checkpointY)
   }).toList
 
+  val destinations = (for (i ← 1 to checkpointNb) yield checkpoints.tail :+ checkpoints.head).flatten.toList
+
   var pods: List[Pod] = (for (i ← 1 to 4) yield {
     val u = PodUpdate(checkpoints)
-    Pod(u.position, checkpoints, u.orientation, u.speed, true)
+    Pod(u.position, destinations, u.orientation, u.speed, true)
   }).toList
 
   var race = Race(pods, checkpoints, laps)

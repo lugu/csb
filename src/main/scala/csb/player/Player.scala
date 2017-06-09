@@ -405,7 +405,7 @@ case class Pod(
 
   def speedAngleToDest = speed.radianFrom(destinationDirection)
 
-  override def toString = s"Pod($position, $destinations, $orientation, $speed, $boostAvailable)"
+  override def toString = s"Pod($position, List($destination), $orientation, $speed, $boostAvailable)"
 
   val checkpointRadius = 600
   val podRadius = 400
@@ -640,6 +640,7 @@ case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Reco
     override def toString = s"RaceRecord($laps, $checkpoints, $steps)"
 
     def step(i: Int): Race = Race(steps(i).map(_.pod).toList, checkpoints, laps)
+    def stepCommands(i: Int): List[Option[Command]] = steps(i).map(_.command).toList
 }
 
 object PodUpdate {
@@ -685,6 +686,7 @@ object Player extends App {
     if (race.isFinished) {
       recorder.dump()
     } else {
+      recorder.dump()
       commands.foreach(c => println(c.answer))
       pods = for (p ← pods) yield { p.updateWith(PodUpdate(checkpoints)) }
       race = Race(pods, checkpoints, laps)

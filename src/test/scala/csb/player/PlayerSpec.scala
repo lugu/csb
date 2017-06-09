@@ -198,4 +198,42 @@ class PlayerSpec extends FlatSpec with Matchers {
           Point(-0.6290271316856146,-0.7773833466208085), Point(-53,-94), true),
           Some(Command(Point(10440.171798564217,-976.1539805655154),60,"PILOT0-CORRECTED"))))))
   }
+
+  "Simulation" should "find the correct next position from samples" in {
+
+    val recorder = RaceRecord(3, List(Point(9100.0,-1850.0), Point(5035.0,-5257.0), Point(11487.0,-6053.0)), List(
+  List(
+    Record(
+      Pod(Point(9421.0,-2233.0), List(Point(5035.0,-5257.0)), Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      Some(Command(Point(4892.102514936406,-4351.74669788171),60.0,"PILOT1-CORRECTED"))),
+    Record(
+      Pod(Point(8779.0,-1467.0), List(Point(5035.0,-5257.0)), Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      Some(Command(Point(4633.992814198309,-4263.232363315385),60.0,"PILOT1-CORRECTED"))),
+    Record(
+      Pod(Point(10064.0,-3000.0), List(Point(5035.0,-5257.0)), Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      None),
+    Record(
+      Pod(Point(8136.0,-700.0), List(Point(5035.0,-5257.0)), Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      None)),
+  List(
+    Record(
+      Pod(Point(9367.0,-2258.0), List(Point(5035.0,-5257.0)), Point(-0.9063077870366499,-0.4226182617406995), Point(-46.0,-21.0), true),
+      Some(Command(Point(7115.621188067173,-3345.5525830175584),200.0,"PILOT1-CORRECTED"))),
+    Record(
+      Pod(Point(8729.0,-1501.0), List(Point(5035.0,-5257.0)), Point(-0.8290375725550416,-0.5591929034707469), Point(-42.0,-28.0), true),
+      Some(Command(Point(6669.379019201352,-2918.2639748135543),200.0,"PILOT1-CORRECTED"))),
+    Record(
+      Pod(Point(9991.0,-3033.0), List(Point(5035.0,-5257.0)), Point(-0.913545457642601,-0.40673664307580004), Point(-62.0,-27.0), true),
+      None),
+    Record(
+      Pod(Point(8091.0,-766.0), List(Point(5035.0,-5257.0)), Point(-0.5591929034707467,-0.8290375725550417), Point(-38.0,-56.0), true),
+      None))))
+    val step = 0
+    val race = recorder.step(step)
+    val expectecdRace = recorder.step(step + 1)
+    val computedRace = race.simulate(recorder.stepCommands(step).flatten)
+    assert(computedRace.pods(0).position == expectecdRace.pods(0).position)
+    assert(computedRace.pods(1).position == expectecdRace.pods(1).position)
+  }
 }
+

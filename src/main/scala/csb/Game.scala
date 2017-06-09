@@ -1,6 +1,7 @@
 package csb
 
 import csb.player.Command
+import csb.player.RaceRecord
 import csb.player.Player
 import csb.player.Pod
 import csb.player.Point
@@ -69,6 +70,8 @@ class Game() {
 
   var count = 0
   var race = new Race(initCheckpoints, 3)
+  var recorder = RaceRecord(race.laps, race.checkpoints, List())
+
   val loggers = List(new Logger(), new Logger(), Logger.default)
 
   def loggerA = loggers(0)
@@ -103,6 +106,8 @@ class Game() {
     Print("race step: " + count)
     race.pods.foreach(Print(_))
     race = race.simulate(commands)
+    recorder = recorder.updateWith(race, commands.map(c => Some(c)))
+    if (isFinished) recorder.dump()
   }
 
   def frames: Stream[Frame] = {

@@ -19,7 +19,7 @@ case class Angle(radian: Double) {
     else false
   def unary_- = Radian(-radian)
   def degree: Double = radian / Pi * 180
-  override def toString = degree.toString + "°"
+  override def toString = s"Degree($degree)"
 }
 
 object Degree {
@@ -41,7 +41,7 @@ object Angle {
 }
 
 case class Point(x: Double, y: Double) {
-  override def toString = s"($x,$y)"
+  override def toString = s"Point($x,$y)"
   def +(other: Point) = Point(x + other.x, y + other.y)
   def -(other: Point) = Point(x - other.x, y - other.y)
   def unary_- = Point(-x, -y)
@@ -405,12 +405,7 @@ case class Pod(
 
   def speedAngleToDest = speed.radianFrom(destinationDirection)
 
-  override def toString = "position: " + position +
-    "\ndestination: " + destination +
-    "\norientation: " + orientation +
-    "\nangleToDest: " + angleToDest +
-    "\nspeed: " + speed +
-    "\nspeed norm: " + speed.norm
+  override def toString = s"Pod($position, $destinations, $orientation, $speed, $boostAvailable)"
 
   val checkpointRadius = 600
   val podRadius = 400
@@ -611,6 +606,7 @@ case class Command(direction: Point, thrust: Double, label: String) {
     // reverse Y coordinate as the input are non cartesian
     "" + x + " " + (-y) + " " + s + " " + s + " " + label
   }
+  override def toString = s"Command($direction,$thrust," + "\"" + label + "\")"
 }
 
 object Print {
@@ -630,16 +626,19 @@ case class Player(var race: Race) {
 
 case class PodUpdate(position: Point, destination: Point, orientation: Point, speed: Point) 
 
-case class Record(pod: Pod, command: Option[Command])
-case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[Array[Record]]) {
-    def updateWith(record: Array[Record]): RaceRecord = {
+case class Record(pod: Pod, command: Option[Command]) {
+  override def toString = s"Record($pod, $command)"
+}
+
+case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Record]]) {
+    def updateWith(race: Race, commands: List[Option[Command]]) = {
+      val record = List(Record(race.pods(0), commands(0)), Record(race.pods(1), commands(1)), 
+                      Record(race.pods(2), commands(3)), Record(race.pods(3), commands(3)))
       RaceRecord(laps, checkpoints, steps ::: List(record))
     }
-    def dump(): Unit = {
-      Print(laps.toString)
-      Print(checkpoints)
-      steps.foreach(Print(_))
-    }
+    def dump(): Unit = Print(toString)
+    override def toString = s"RaceRecord($laps, $checkpoints, $steps)"
+
     def step(i: Int): Race = Race(steps(i).map(_.pod).toList, checkpoints, laps)
 }
 
@@ -679,9 +678,9 @@ object Player extends App {
   while (!race.isFinished) {
     val player = Player(race)
     val commands = player.commands
-    val record = Array(Record(pods(0), Some(commands(0))), Record(pods(1), Some(commands(1))), 
-                      Record(pods(2), None), Record(pods(3), None))
-    recorder = recorder.updateWith(record)
+    recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
+
+    // race.simulate(commands ::: commands).pods.take(2).foreach(p => Print("next simulation: " + p))
 
     if (race.isFinished) {
       recorder.dump()

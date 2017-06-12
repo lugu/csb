@@ -65,11 +65,11 @@ case class Point(x: Double, y: Double) {
   }
   def round = Point(x.round, y.round)
   def floor = Point(x.floor, y.floor)
+  def data: Array[Double] = Array(x, y)
 }
 
 object Point {
   def apply(a: Int, b: Int): Point = Point(a.toDouble, b.toDouble)
-
 }
 
 trait Pilot {
@@ -406,6 +406,7 @@ case class Pod(
   def speedAngleToDest = speed.radianFrom(destinationDirection)
 
   override def toString = s"Pod($position, List($destination), $orientation, $speed, $boostAvailable)"
+  def data = position.data ++ destination.data ++ orientation.data ++ speed.data ++ Array(0.0)
 
   val checkpointRadius = 600
   val podRadius = 400
@@ -607,6 +608,7 @@ case class Command(direction: Point, thrust: Double, label: String) {
     "" + x + " " + (-y) + " " + s + " " + s + " " + label
   }
   override def toString = s"Command($direction,$thrust," + "\"" + label + "\")"
+  def data = direction.data ++ Array(thrust)
 }
 
 object Print {
@@ -628,6 +630,11 @@ case class PodUpdate(position: Point, destination: Point, orientation: Point, sp
 
 case class Record(pod: Pod, command: Option[Command]) {
   override def toString = s"Record($pod, $command)"
+
+  def data: Array[Double] = command match {
+      case None => pod.data ++ Array(0.0, 0.0, 0.0)
+      case Some(c) => pod.data ++ c.data
+  }
 }
 
 case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Record]]) {
@@ -638,6 +645,11 @@ case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Reco
     }
     def dump(): Unit = Print(toString)
     override def toString = s"RaceRecord($laps, $checkpoints, $steps)"
+
+    def data: Array[Double] = {
+      val a: Array[Double] = checkpoints.map(_.data).flatten.toArray ++ steps.flatten.map(_.data).flatten
+      Array(laps.toDouble) ++ a
+    }
 
     def step(i: Int): Race = Race(steps(i).map(_.pod).toList, checkpoints, laps)
     def stepCommands(i: Int): List[Option[Command]] = steps(i).map(_.command).toList

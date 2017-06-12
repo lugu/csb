@@ -137,7 +137,7 @@ class SimulationSpec extends FlatSpec with Matchers {
     checkSimulation(recorder, 1)
   }
 
-  "Simulation" should "compute next position when pod speed is 50 and direction is vertical" in {
+  it should "compute next position when pod speed is 50 and direction is vertical" in {
 
     val recorder = RaceRecord(3, List(Point(9115.0,-1866.0),
       Point(4995.0,-5237.0), Point(11460.0,-6099.0)),
@@ -181,7 +181,7 @@ class SimulationSpec extends FlatSpec with Matchers {
     checkSimulation(recorder, 1)
   }
 
-  "Simulation" should "compute next position when pod speed is 100 and direction is vertical" in {
+  it should "compute next position when pod speed is 100 and direction is vertical" in {
 
     val recorder = RaceRecord(3,
       List(Point(11294.0,-2842.0), Point(7502.0,-6917.0),
@@ -225,7 +225,7 @@ class SimulationSpec extends FlatSpec with Matchers {
     checkSimulation(recorder, 1)
  }
 
-  "Simulation" should "compute next position when pod speed is 50 and direction is diagonal" in {
+  it should "compute next position when pod speed is 50 and direction is diagonal" in {
 
   val recorder = RaceRecord(3, List(Point(8699.0,-7436.0),
       Point(7199.0,-2176.0), Point(3628.0,-5253.0), Point(13818.0,-5068.0),

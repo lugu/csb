@@ -4,6 +4,16 @@ import math._
 import math.{ sqrt, pow, cos, sin, atan, Pi }
 import scala.util._
 
+trait Serializable[T] {
+  def fromData(data: Array[Double]): T
+  def dataSize: Int
+}
+
+case class Visitor[T](proto: Serializable[T], data: Array[Double]) {
+  def get: T = proto.fromData(data)
+  def next: Array[Double] = data.drop(proto.dataSize)
+}
+
 case class Angle(radian: Double) {
   // internal representation in radian from -Pi to Pi.
   def +(other: Angle) = Radian(radian + other.radian)
@@ -30,7 +40,7 @@ object Radian {
   def apply(radian: Double) = Angle.fromRadian(radian)
 }
 
-object Angle {
+object Angle extends Serializable[Angle] {
   def fromDegree(angle: Double) = Radian(angle / 180 * Pi)
   def fromRadian(radian: Double): Angle = {
     val r = radian % (2 * Pi)
@@ -38,6 +48,8 @@ object Angle {
     else if (r > Pi) new Angle(r - 2 * Pi)
     else new Angle(r)
   }
+  def dataSize = 1
+  def fromData(data: Array[Double]) = Angle(data.head)
 }
 
 case class Point(x: Double, y: Double) {
@@ -69,8 +81,10 @@ case class Point(x: Double, y: Double) {
   def data: Array[Double] = Array(x, y)
 }
 
-object Point {
+object Point extends Serializable[Point] {
   def apply(a: Int, b: Int): Point = Point(a.toDouble, b.toDouble)
+  def dataSize = 1
+  def fromData(data: Array[Double]) = Point(data(0), data(1))
 }
 
 trait Pilot {
@@ -490,16 +504,24 @@ case class Pod(
   }
 }
 
-object Pod {
+object Pod extends Serializable[Pod] {
 
   def distanceToLine(linePoint: Point, lineDirection: Point, testPoint: Point): Double =
     List(linePoint, lineDirection, testPoint) match {
       case List(Point(x, y), Point(u, v), Point(a, b)) ⇒
         abs(v * a - u * b - v * x + u * y) / sqrt(v * v + u * u)
     }
+  def dataSize = Point.dataSize * 4
+  def fromData(data: Array[Double]) = {
+    val posVisitor = Visitor(Point, data)
+    val destVisitor = Visitor(Point, posVisitor.next)
+    val orVisitor = Visitor(Point, destVisitor.next)
+    val spVisitor = Visitor(Point, orVisitor.next)
+    Pod(posVisitor.get, List(destVisitor.get), orVisitor.get, spVisitor.get, true)
+  }
 }
 
-case class Race(
+case class Race (
     val pods:        List[Pod],
     val checkpoints: List[Point],
     val laps:        Int) {
@@ -614,6 +636,14 @@ case class Command(direction: Point, thrust: Double, label: String) {
   def data = direction.data ++ Array(thrust)
 }
 
+object Command extends Serializable[Command] {
+  def dataSize = Point.dataSize + 1
+  def fromData(data: Array[Double]) = {
+    val dirVisitor = Visitor(Point, data)
+    Command(dirVisitor.get, dirVisitor.next.head, "unknown")
+  }
+}
+
 object Print {
   var printer: (String) ⇒ Unit = Console.err.println(_)
   def setPrinter(p: String ⇒ Unit) = {
@@ -640,6 +670,15 @@ case class Record(pod: Pod, command: Option[Command]) {
   }
 }
 
+object Record extends Serializable[Record] {
+  def dataSize = Pod.dataSize + Command.dataSize
+  def fromData(data: Array[Double]) = {
+    val podVisitor = Visitor(Pod, data)
+    val commandVisitor = Visitor(Command, podVisitor.next)
+    Record(podVisitor.get, Some(commandVisitor.get))
+  }
+}
+
 case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Record]]) {
     def updateWith(race: Race, commands: List[Option[Command]]) = {
       val record = List(Record(race.pods(0), commands(0)), Record(race.pods(1), commands(1)), 
@@ -651,11 +690,16 @@ case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Reco
 
     def data: Array[Double] = {
       val a: Array[Double] = checkpoints.map(_.data).flatten.toArray ++ steps.flatten.map(_.data).flatten
-      Array(laps.toDouble) ++ a
+      Array(laps.toDouble, checkpoints.size) ++ a
     }
 
     def step(i: Int): Race = Race(steps(i).map(_.pod).toList, checkpoints, laps)
     def stepCommands(i: Int): List[Option[Command]] = steps(i).map(_.command).toList
+}
+
+object RaceRecord extends Serializable[RaceRecord] {
+  def dataSize = 0
+  def fromData(data: Array[Double]) = ???
 }
 
 object PodUpdate {

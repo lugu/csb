@@ -6,12 +6,12 @@ import scala.util._
 
 trait Serializable[T] {
   def fromData(data: Array[Double]): T
-  def dataSize: Int
+  def dataSize(data: Array[Double]): Int
 }
 
 case class Visitor[T](proto: Serializable[T], data: Array[Double]) {
   def get: T = proto.fromData(data)
-  def next: Array[Double] = data.drop(proto.dataSize)
+  def next: Array[Double] = data.drop(proto.dataSize(data))
 }
 
 case class Angle(radian: Double) {
@@ -48,7 +48,7 @@ object Angle extends Serializable[Angle] {
     else if (r > Pi) new Angle(r - 2 * Pi)
     else new Angle(r)
   }
-  def dataSize = 1
+  def dataSize(data: Array[Double]) = 1
   def fromData(data: Array[Double]) = Angle(data.head)
 }
 
@@ -83,7 +83,7 @@ case class Point(x: Double, y: Double) {
 
 object Point extends Serializable[Point] {
   def apply(a: Int, b: Int): Point = Point(a.toDouble, b.toDouble)
-  def dataSize = 1
+  def dataSize(data: Array[Double]) = 2
   def fromData(data: Array[Double]) = Point(data(0), data(1))
 }
 
@@ -511,7 +511,7 @@ object Pod extends Serializable[Pod] {
       case List(Point(x, y), Point(u, v), Point(a, b)) ⇒
         abs(v * a - u * b - v * x + u * y) / sqrt(v * v + u * u)
     }
-  def dataSize = Point.dataSize * 4
+  def dataSize(data: Array[Double]) = Point.dataSize(data) * 4
   def fromData(data: Array[Double]) = {
     val posVisitor = Visitor(Point, data)
     val destVisitor = Visitor(Point, posVisitor.next)
@@ -637,7 +637,7 @@ case class Command(direction: Point, thrust: Double, label: String) {
 }
 
 object Command extends Serializable[Command] {
-  def dataSize = Point.dataSize + 1
+  def dataSize(data: Array[Double]) = Point.dataSize(data) + 1
   def fromData(data: Array[Double]) = {
     val dirVisitor = Visitor(Point, data)
     Command(dirVisitor.get, dirVisitor.next.head, "unknown")
@@ -671,7 +671,11 @@ case class Record(pod: Pod, command: Option[Command]) {
 }
 
 object Record extends Serializable[Record] {
-  def dataSize = Pod.dataSize + Command.dataSize
+  def dataSize(data: Array[Double]) = {
+    val podSize = Pod.dataSize(data)
+    Command.dataSize(data.drop(podSize))
+  }
+
   def fromData(data: Array[Double]) = {
     val podVisitor = Visitor(Pod, data)
     val commandVisitor = Visitor(Command, podVisitor.next)
@@ -698,8 +702,24 @@ case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Reco
 }
 
 object RaceRecord extends Serializable[RaceRecord] {
-  def dataSize = 0
-  def fromData(data: Array[Double]) = ???
+  def checkpointsNb(data: Array[Double]) = data.drop(1).head.toInt
+  def recordNb(data: Array[Double]) = data.drop(2).head.toInt
+  def dataSize(data: Array[Double]) = 1 + checkpointsNb(data) + recordNb(data) * Record.dataSize(data)
+  def fromData(data: Array[Double]) = {
+    val laps = data.head.toInt
+    var dataPoint = data.drop(3)
+    val checkpoints = for (i ← 1 to checkpointsNb(data) - 1) yield {
+      val p = Point.fromData(dataPoint)
+      dataPoint = Visitor(Point, dataPoint).next
+      p
+    }
+    val records = for (i ← 1 to recordNb(data) - 1) yield {
+      val r = Record.fromData(dataPoint)
+      dataPoint = Visitor(Record, dataPoint).next
+      r
+    }
+    RaceRecord(laps, checkpoints.toList, records.toList.grouped(4).toList)
+  }
 }
 
 object PodUpdate {

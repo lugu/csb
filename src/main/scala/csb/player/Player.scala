@@ -64,7 +64,8 @@ case class Point(x: Double, y: Double) {
     Point(ca * x - sa * y, sa * x + ca * y)
   }
   def round = Point(x.round, y.round)
-  def floor = Point(x.floor, y.floor)
+  // floor a 2D vector in absolute norm
+  def floor = Point(if (x < 0) x.ceil else x.floor, if (y < 0) y.ceil else y.floor)
   def data: Array[Double] = Array(x, y)
 }
 
@@ -476,7 +477,9 @@ case class Pod(
 
   def update(command: Command) = {
     val expectedOrientation = (command.direction - position).normalize
-    val newOrientation = orientation.rotate(Degree(max(-18, min(18, orientation.radianWith(expectedOrientation).degree))))
+    val desiredOrientation = orientation.rotate(Degree(max(-18, min(18, expectedOrientation.radianWith(orientation).degree))))
+    val angle = desiredOrientation.radianWith(Point(1, 0))
+    val newOrientation = Point(1, 0).rotate(angle)
     val newSpeed = speed + newOrientation * command.thrust
     Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, boostAvailable).updateDestination
   }
@@ -692,8 +695,6 @@ object Player extends App {
     val player = Player(race)
     val commands = player.commands
     recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
-
-    // race.simulate(commands ::: commands).pods.take(2).foreach(p => Print("next simulation: " + p))
 
     if (race.isFinished) {
       recorder.dump()

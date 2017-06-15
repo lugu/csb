@@ -80,8 +80,14 @@ class SimulationSpec extends FlatSpec with Matchers {
     val race = recorder.step(step)
     val expectecdRace = recorder.step(step + 1)
     val computedRace = race.simulate(recorder.stepCommands(step).flatten)
-    assert(computedRace.pods(0).position == expectecdRace.pods(0).position)
-    assert(computedRace.pods(1).position == expectecdRace.pods(1).position)
+
+    def compare(podA: Pod, podB: Pod) = {
+        assert(podA.orientation == podB.orientation, "in orientation computation")
+        assert(podA.speed == podB.speed, "in speed computation")
+        assert(podA.position == podB.position, "in position computation")
+    }
+    compare(computedRace.pods(0), expectecdRace.pods(0))
+    compare(computedRace.pods(1), expectecdRace.pods(1))
   }
 
   "Simulation" should "compute next position when pod speed is 50 and direction is horizontal" in {
@@ -279,4 +285,70 @@ class SimulationSpec extends FlatSpec with Matchers {
       true), None))))
     checkSimulation(recorder, 1)
   }
+
+  "Simulation" should "compute next position when pod speed is 50 and direction is changing" in {
+
+  val recorder = RaceRecord(3, List(Point(11451.0,-6104.0),
+      Point(9075.0,-1844.0), Point(5000.0,-5267.0)),
+      List(List(Record(Pod(Point(11014.0,-6348.0),
+      List(Point(9075.0,-1844.0)),
+      Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      Some(Command(Point(12014.0,-6348.0),50.0,"TEST-UP"))),
+      Record(Pod(Point(11888.0,-5860.0), List(Point(9075.0,-1844.0)),
+      Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      Some(Command(Point(12888.0,-5860.0),50.0,"TEST-UP"))),
+      Record(Pod(Point(10141.0,-6835.0), List(Point(9075.0,-1844.0)),
+      Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      None), Record(Pod(Point(12761.0,-5373.0), List(Point(9075.0,-1844.0)),
+      Point(0.9998476951563913,0.01745240643728351), Point(0.0,0.0), true),
+      None)), List(Record(Pod(Point(11064.0,-6348.0),
+      List(Point(9075.0,-1844.0)), Point(1.0,0.0), Point(42.0,0.0), true),
+      Some(Command(Point(11064.0,-5348.0),50.0,"TEST-LEFT"))),
+      Record(Pod(Point(11938.0,-5860.0), List(Point(9075.0,-1844.0)),
+      Point(1.0,0.0), Point(42.0,0.0), true),
+      Some(Command(Point(11938.0,-4860.0),50.0,"TEST-LEFT"))),
+      Record(Pod(Point(10124.0,-6757.0), List(Point(9075.0,-1844.0)),
+      Point(-0.20791169081775956,0.9781476007338056), Point(-14.0,66.0),
+      true), None), Record(Pod(Point(12703.0,-5318.0),
+      List(Point(9075.0,-1844.0)),
+      Point(-0.719339800338651,0.6946583704589975), Point(-49.0,47.0),
+      true), None)), List(Record(Pod(Point(11154.0,-6333.0),
+      List(Point(9075.0,-1844.0)),
+      Point(0.9510565162951535,0.3090169943749474), Point(76.0,13.0), true),
+      Some(Command(Point(12154.0,-6333.0),50.0,"TEST-UP"))),
+      Record(Pod(Point(12028.0,-5845.0), List(Point(9075.0,-1844.0)),
+      Point(0.9510565162951535,0.3090169943749474), Point(76.0,13.0), true),
+      Some(Command(Point(13028.0,-5845.0),50.0,"TEST-UP"))),
+      Record(Pod(Point(10093.0,-6613.0), List(Point(9075.0,-1844.0)),
+      Point(-0.20791169081775956,0.9781476007338056), Point(-26.0,122.0),
+      true), None), Record(Pod(Point(12596.0,-5216.0),
+      List(Point(9075.0,-1844.0)),
+      Point(-0.719339800338651,0.6946583704589975), Point(-90.0,86.0),
+      true), None)), List(Record(Pod(Point(11280.0,-6320.0),
+      List(Point(9075.0,-1844.0)), Point(1.0,0.0), Point(107.0,11.0), true),
+      Some(Command(Point(11280.0,-5320.0),50.0,"TEST-LEFT"))),
+      Record(Pod(Point(12154.0,-5832.0), List(Point(9075.0,-1844.0)),
+      Point(1.0,0.0), Point(107.0,11.0), true),
+      Some(Command(Point(12154.0,-4832.0),50.0,"TEST-LEFT"))),
+      Record(Pod(Point(10050.0,-6413.0), List(Point(9075.0,-1844.0)),
+      Point(-0.20791169081775956,0.9781476007338056), Point(-36.0,170.0),
+      true), None), Record(Pod(Point(12448.0,-5075.0),
+      List(Point(9075.0,-1844.0)),
+      Point(-0.719339800338651,0.6946583704589975), Point(-125.0,120.0),
+      true), None)), List(Record(Pod(Point(11435.0,-6294.0),
+      List(Point(9075.0,-1844.0)),
+      Point(0.9510565162951535,0.3090169943749474), Point(131.0,22.0),
+      true), Some(Command(Point(12435.0,-6294.0),50.0,"TEST-UP"))),
+      Record(Pod(Point(12309.0,-5806.0), List(Point(9075.0,-1844.0)),
+      Point(0.9510565162951535,0.3090169943749474), Point(131.0,22.0),
+      true), Some(Command(Point(13309.0,-5806.0),50.0,"TEST-UP"))),
+      Record(Pod(Point(9997.0,-6165.0), List(Point(9075.0,-1844.0)),
+      Point(-0.20791169081775956,0.9781476007338056), Point(-44.0,211.0),
+      true), None), Record(Pod(Point(12265.0,-4900.0),
+      List(Point(9075.0,-1844.0)),
+      Point(-0.719339800338651,0.6946583704589975), Point(-155.0,149.0),
+      true), None))))
+
+    checkSimulation(recorder, 2)
+   }
 }

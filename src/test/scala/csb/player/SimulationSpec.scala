@@ -286,7 +286,7 @@ class SimulationSpec extends FlatSpec with Matchers {
     checkSimulation(recorder, 1)
   }
 
-  "Simulation" should "compute next position when pod speed is 50 and direction is changing" in {
+  it should "compute next position when pod speed is 50 and direction is changing" in {
 
   val recorder = RaceRecord(3, List(Point(11451.0,-6104.0),
       Point(9075.0,-1844.0), Point(5000.0,-5267.0)),

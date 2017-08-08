@@ -282,8 +282,8 @@ case class PilotWait(pod: Pod, race: Race, checkpoint: Point) extends Pilot {
   def direction = position
   def thrust = {
     val t = if (dist > smallDistance) 200 else (dist / smallDistance) * 200
-    Print("dis " + dist)
-    Print("thrust " + t)
+    // Print("dis " + dist)
+    // Print("thrust " + t)
     t
   }
 }
@@ -431,10 +431,10 @@ case class Pod(
       val collisionAngleToSpeed = speed.radianWith(otherDirection)
       val speedAngle = speed.radianWith(other.speed)
 
-      Print("speed " + speed)
-      Print("otherDirection " + otherDirection)
-      Print("collisionAngleToSpeed " + collisionAngleToSpeed)
-      Print("speedAngle " + speedAngle)
+      // Print("speed " + speed)
+      // Print("otherDirection " + otherDirection)
+      // Print("collisionAngleToSpeed " + collisionAngleToSpeed)
+      // Print("speedAngle " + speedAngle)
 
       if (collisionAngleToSpeed < Degree(45) && speedAngle > Degree(45)) true
       else false
@@ -555,8 +555,8 @@ case class Race(
       target
     }
     else {
-      Print("can not find next checkpoint to ", p)
-      checkpoints.zipWithIndex.foreach(Print(_))
+      // Print("can not find next checkpoint to ", p)
+      // checkpoints.zipWithIndex.foreach(Print(_))
       Point(0, 0)
     }
   }
@@ -572,8 +572,8 @@ case class Race(
       target
     }
     else {
-      Print("can not find next checkpoint to ", p)
-      checkpoints.zipWithIndex.foreach(Print(_))
+      // Print("can not find next checkpoint to ", p)
+      // checkpoints.zipWithIndex.foreach(Print(_))
       Point(0, 0)
     }
   }
@@ -660,7 +660,7 @@ case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Reco
 
 object PodUpdate {
   def apply(checkpoints: List[Point]): PodUpdate = {
-      val Array(x, y, vx, vy, angle, index) = for (i ← readLine split " ") yield i.toInt
+      val Array(x, y, vx, vy, angle, index) = for (i ← Input() split " ") yield i.toInt
       // reverse Y coordinate as the input are non cartesian
       val position = Point(x, -y)
       val destination = checkpoints(index)
@@ -670,12 +670,35 @@ object PodUpdate {
   }
 }
 
+object Input {
+  var numbers = scala.collection.mutable.ListBuffer.empty[Double]
+  def apply() = {
+    val line = readLine
+    numbers ++= line.split(" ").map(_.toDouble)
+    line
+  }
+
+  def dump() = {
+
+    import java.util.Base64
+    import java.nio.charset.StandardCharsets
+    import java.nio.ByteBuffer
+
+    numbers.foreach { n =>
+      val l = java.lang.Double.doubleToLongBits(n)
+      val b = ByteBuffer.allocate(8).putLong(l).array()
+      val s: String = Base64.getEncoder.encodeToString(b)
+      Print(s)
+    }
+  }
+}
+
 object Player extends App {
 
-  val Array(laps) = for (i ← readLine split " ") yield i.toInt
-  val Array(checkpointNb) = for (i ← readLine split " ") yield i.toInt
+  val Array(laps) = for (i ← Input() split " ") yield i.toInt
+  val Array(checkpointNb) = for (i ← Input() split " ") yield i.toInt
   val checkpoints: List[Point] = (for (i ← 1 to checkpointNb) yield {
-    val Array(checkpointX, checkpointY) = for (i ← readLine split " ") yield i.toInt
+    val Array(checkpointX, checkpointY) = for (i ← Input() split " ") yield i.toInt
     // reverse Y coordinate as the input are non cartesian
     Point(checkpointX, -checkpointY)
   }).toList
@@ -694,12 +717,11 @@ object Player extends App {
   while (!race.isFinished) {
     val player = Player(race)
     val commands = player.commands
-    recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
 
-    if (race.isFinished) {
-      recorder.dump()
-    } else {
-      recorder.dump()
+    recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
+    Input.dump()
+
+    if (! race.isFinished) {
       commands.foreach(c => println(c.answer))
       pods = for (p ← pods) yield { p.updateWith(PodUpdate(checkpoints)) }
       race = Race(pods, checkpoints, laps)

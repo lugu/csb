@@ -1,6 +1,11 @@
 ================================================================================
 
 TODO:
+	- refactor the code to enable multiple files (https://github.com/TrueLaurel/CodinGame-Scala-Kit)
+	- play against yourself in a native app
+	- profile and optimize the code
+	- play against yourself in the web browser
+TODO:
 	1. can record accuratly the game from the website
 	2. can replay accuratly the game in the browser
 

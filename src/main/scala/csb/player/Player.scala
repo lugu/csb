@@ -670,25 +670,71 @@ object PodUpdate {
   }
 }
 
+
 object Input {
-  var numbers = scala.collection.mutable.ListBuffer.empty[Double]
-  def apply() = {
-    val line = readLine
-    numbers ++= line.split(" ").map(_.toDouble)
+  def apply(): String = IO.readLine()
+}
+
+object Output {
+  def apply(s: String) = IO.println(s)
+}
+
+object IO {
+
+  var record = ""
+
+  def println(out: String) = {
+    record += out + "\n"
+    scala.Console.println(out)
+  }
+
+  def readLine(): String = {
+    val line = scala.io.StdIn.readLine()
+    record += line
     line
   }
 
+  def decompress(inData: Array[Byte]): Array[Byte] = {
+    import java.util.zip.Inflater
+    val inflater = new Inflater()
+    inflater.setInput(inData)
+    val decompressedData = new Array[Byte](inData.size * 2)
+    var count = inflater.inflate(decompressedData)
+    var finalData = decompressedData.take(count)
+    while (count > 0) {
+      count = inflater.inflate(decompressedData)
+      finalData = finalData ++ decompressedData.take(count)
+    }
+    return finalData 
+  }
+
+  def compress(inData: Array[Byte]): Array[Byte] = {
+    import java.util.zip.Deflater
+    var deflater: Deflater = new Deflater()
+    deflater.setInput(inData)
+    deflater.finish
+    // compressed data can be larger than original data
+    val compressedData = new Array[Byte](inData.size * 2)
+    val count: Int = deflater.deflate(compressedData)
+    return compressedData.take(count)
+  }
+
+  def unbase64(inString: String): Array[Byte] = {
+      import java.util.Base64
+      Base64.getDecoder.decode(inString)
+  }
+
+  def base64(inData: Array[Byte]): String = {
+      import java.util.Base64
+      Base64.getEncoder.encodeToString(inData)
+  }
+
   def dump() = {
-
-    import java.util.Base64
-    import java.nio.charset.StandardCharsets
-    import java.nio.ByteBuffer
-
-    numbers.foreach { n =>
-      val l = java.lang.Double.doubleToLongBits(n)
-      val b = ByteBuffer.allocate(8).putLong(l).array()
-      val s: String = Base64.getEncoder.encodeToString(b)
-      Print(s)
+    val out = base64(compress(record.getBytes))
+    var printed = 0
+    while(printed < out.size) {
+        Print(out.slice(printed, printed + 1024))
+        printed += 1024
     }
   }
 }
@@ -719,10 +765,10 @@ object Player extends App {
     val commands = player.commands
 
     recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
-    Input.dump()
+    IO.dump()
 
     if (! race.isFinished) {
-      commands.foreach(c => println(c.answer))
+      commands.foreach(c => Output(c.answer))
       pods = for (p ← pods) yield { p.updateWith(PodUpdate(checkpoints)) }
       race = Race(pods, checkpoints, laps)
     }

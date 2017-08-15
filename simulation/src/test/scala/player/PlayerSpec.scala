@@ -1,4 +1,4 @@
-package csb.player
+package player
 
 import math.{ Pi }
 

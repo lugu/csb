@@ -1,4 +1,4 @@
-package csb.player
+package player
 
 import org.scalatest._
 

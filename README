@@ -1,5 +1,5 @@
 
-sbt "~fastOptJS"
-sbt "~testQuick"
+sbt "~js/fastOptJS"
+sbt "~simulation/testQuick"
 
-surf http://localhost:12345/target/scala-2.11/classes/index-dev.html
+surf http://localhost:12345/js/target/scala-2.11/classes/index-dev.html

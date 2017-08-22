@@ -20,6 +20,7 @@ lazy val csb = crossProject.in(file(".")).
   ).
   jsSettings(
     scalaVersion := "2.11.8",
+    localUrl := ("localhost", 8080),
     libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % "0.9.1",
         "com.lihaoyi" %%% "scalatags" % "0.6.2",
@@ -27,6 +28,5 @@ lazy val csb = crossProject.in(file(".")).
         "org.scalatest" %%% "scalatest" % "3.0.1" % "test"
     )
   )
-
 lazy val csbJVM = csb.jvm
 lazy val csbJS = csb.js.enablePlugins(ScalaJSPlugin, WorkbenchPlugin)

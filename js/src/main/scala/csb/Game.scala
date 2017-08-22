@@ -33,7 +33,7 @@ object Board {
 
   val terminals = {
     val tags = List("terminalA", "terminalB", "terminal0")
-    tags.map(t ⇒ new Terminal(document.getElementById(t).asInstanceOf[html.Span]))
+    tags.map(t => new Terminal(document.getElementById(t).asInstanceOf[html.Span]))
   }
 }
 
@@ -62,7 +62,7 @@ class Logger {
   def print(msg: String): Unit = {
     data = data :+ msg
   }
-  def makeDefault() = Print.setPrinter { message ⇒ print(message) }
+  def makeDefault() = Print.setPrinter { message => print(message) }
 }
 
 // Game connect the simulation with the board
@@ -80,8 +80,8 @@ class Game() {
   val animation = new Animation(FrameTimeline(frames))
   val controller = new WindowController(animation)
 
-  def podActors = race.pods.zip(Board.sprites).map{ case (pod, sprite) ⇒ PodActor(pod, sprite) }
-  def logActors = loggers.zip(Board.terminals).map{ case (l, t) ⇒ LogActor(l.flush, t) }
+  def podActors = race.pods.zip(Board.sprites).map{ case (pod, sprite) => PodActor(pod, sprite) }
+  def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t) }
   def actors = logActors ::: podActors
 
   def commands = {
@@ -97,7 +97,7 @@ class Game() {
   }
 
   def initCheckpoints() =
-    List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p ⇒ p.toPoint }
+    List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
 
   def isFinished: Boolean = (count < 50) // FIXME: find better terminaison condition
 
@@ -164,7 +164,7 @@ case class Terminal(element: html.Span) {
   }
   def print(message: String) = {
     import scalatags.JsDom.all._
-    message.split("\n").foreach(m ⇒ element.firstChild.appendChild(li(m).render))
+    message.split("\n").foreach(m => element.firstChild.appendChild(li(m).render))
   }
 }
 
@@ -205,17 +205,17 @@ case class FrameTimeline(frames: Stream[Frame]) extends Timeline {
   // warning: this consume the stream
   def computeDuration(): Int = frames.last.time
 
-  def nextTime: Int = frames.find(f ⇒ f.time > time) match {
-    case Some(f) ⇒ f.time
-    case None    ⇒ computeDuration()
+  def nextTime: Int = frames.find(f => f.time > time) match {
+    case Some(f) => f.time
+    case None    => computeDuration()
   }
   def previousTime: Int = if (time == 0) 0
-  else frames.takeWhile(f ⇒ f.time < time).last.time
+  else frames.takeWhile(f => f.time < time).last.time
 
-  def frame: Frame = frames.find(f ⇒ f.time == time) match {
-    case Some(f) ⇒ f
-    case None ⇒ {
-      Print("ERROR: frame not found: ", time toString)
+  def frame: Frame = frames.find(f => f.time == time) match {
+    case Some(f) => f
+    case None => {
+      Print("ERROR: frame not found: ", time.toString)
       frames.head
     }
   }
@@ -228,7 +228,7 @@ case class FrameTimeline(frames: Stream[Frame]) extends Timeline {
   }
 }
 
-case class Timer(ms: Double, event: () ⇒ Unit) {
+case class Timer(ms: Double, event: () => Unit) {
   dom.window.setTimeout(event, ms)
 }
 
@@ -236,7 +236,7 @@ case class Animation(timeline: Timeline) {
   var isPlaying = false
   def fps = 10
   def loop() = {
-    Timer(50, () ⇒ if (isPlaying) {
+    Timer(50, () => if (isPlaying) {
       if (timeline.nextTime != 0) {
         timeline.setTime(timeline.nextTime)
         play()
@@ -268,11 +268,11 @@ case class Animation(timeline: Timeline) {
 
 class WindowController(animation: Animation) {
   def keypress(event: dom.raw.KeyboardEvent) = event.key match {
-    case "PageUp"     ⇒ animation.begining()
-    case "PageDown"   ⇒ animation.end()
-    case "ArrowLeft"  ⇒ animation.stepBackward()
-    case "ArrowRight" ⇒ animation.stepForward()
-    case " "          ⇒ animation.playSwitch()
+    case "PageUp"     => animation.begining()
+    case "PageDown"   => animation.end()
+    case "ArrowLeft"  => animation.stepBackward()
+    case "ArrowRight" => animation.stepForward()
+    case " "          => animation.playSwitch()
   }
   dom.window.addEventListener[dom.raw.KeyboardEvent]("keypress", keypress _)
 }

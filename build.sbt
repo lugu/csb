@@ -9,7 +9,8 @@ lazy val root = project.in(file(".")).
 lazy val csb = crossProject.in(file(".")).
   settings(
     name := "CoderStrikeBack",
-    version := "0.1-SNAPSHOT"
+    version := "0.1-SNAPSHOT",
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
   ).
   jvmSettings(
     scalaVersion := "2.12.2",

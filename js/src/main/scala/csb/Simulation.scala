@@ -25,7 +25,7 @@ case class Simulation(record: RaceRecord) {
 }
 
 object Simulation extends App {
-  override def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
 
     val simulation = Simulation(Records(args))
     for (i <- 0 to 100) {

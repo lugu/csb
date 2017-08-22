@@ -25,13 +25,10 @@ case class Simulation(record: RaceRecord) {
 }
 
 object Simulation extends App {
-  def main(args: Array[String]): Unit = {
-
-    val simulation = Simulation(Records(args))
-    for (i <- 0 to 100) {
-      Print("race step: " + i)
-      simulation.step(i)
-    }
+  val simulation = Simulation(Records(args))
+  for (i <- 0 to 100) {
+    Print("race step: " + i)
+    simulation.step(i)
   }
 }
 

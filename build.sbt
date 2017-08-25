@@ -8,7 +8,8 @@ val sharedSettings = Seq(
 )
 
 lazy val csb =
-  crossProject(JSPlatform, JVMPlatform).
+  crossProject(JSPlatform, JVMPlatform, NativePlatform).
+    crossType(CrossType.Full).
     settings(sharedSettings).
     jvmSettings(
       scalaVersion := "2.12.2",
@@ -26,7 +27,13 @@ lazy val csb =
           "org.scalactic" %%% "scalactic" % "3.0.1" % "test",
           "org.scalatest" %%% "scalatest" % "3.0.1" % "test"
       )
+    ).
+    nativeSettings(
+      scalaVersion := "2.11.11",
+      mainClass in (Compile, run) := Some("csb.test.Main"),
+      nativeGC := "immix"
     )
 
 lazy val csbJS 	   = csb.js.enablePlugins(ScalaJSPlugin) // , WorkbenchPlugin)
 lazy val csbJVM    = csb.jvm
+lazy val csbNative = csb.native.enablePlugins(ScalaNativePlugin)

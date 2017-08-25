@@ -1,12 +1,12 @@
 package csb
 
-import player.Command
-import player.RaceRecord
-import player.Player
-import player.Pod
-import player.Point
-import player.Print
-import player.Race
+import csb.player.Command
+import csb.player.RaceRecord
+import csb.player.Player
+import csb.player.Pod
+import csb.player.Point
+import csb.player.Print
+import csb.player.Race
 
 import org.scalajs.dom
 import org.scalajs.dom.document

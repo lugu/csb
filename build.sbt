@@ -3,8 +3,7 @@ import sbtcrossproject.{crossProject, CrossType}
 
 val sharedSettings = Seq(
  name := "CoderStrikeBack",
- version := "0.1-SNAPSHOT",
- scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+ version := "0.1-SNAPSHOT"
 )
 
 lazy val csb =
@@ -14,12 +13,12 @@ lazy val csb =
     jvmSettings(
       scalaVersion := "2.12.2",
       libraryDependencies ++= Seq(
-              "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-              "org.scala-lang" % "scala-compiler" % "2.12.2" % "test"
+              "org.scalatest" %% "scalatest" % "3.0.1" % "test"
       )
     ).
     jsSettings(
       scalaVersion := "2.11.11",
+      scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
       // localUrl := ("localhost", 8080),
       libraryDependencies ++= Seq(
           "org.scala-js" %%% "scalajs-dom" % "0.9.1",

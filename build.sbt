@@ -29,7 +29,6 @@ lazy val csb =
     ).
     nativeSettings(
       scalaVersion := "2.11.11",
-      mainClass in (Compile, run) := Some("csb.test.Main"),
       nativeGC := "immix"
     )
 

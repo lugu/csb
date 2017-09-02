@@ -1,12 +1,5 @@
 package csb.player
 
-import csb.player.Command
-import csb.player.Player
-import csb.player.Point
-import csb.player.Pod
-import csb.player.Print
-import csb.player.RaceRecord
-
 object Records {
   val checkpoints = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
   val pods = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)

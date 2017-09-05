@@ -16,13 +16,6 @@ class PlayerSpec extends FlatSpec with Matchers {
       assert(pod.destination.isInstanceOf[Point])
   }
   
-  it should "be serializable" in {
-    val pod = Pod(Point(4279,-2340), List(Point(5655,-2567)),
-          Point(-0.6290271316856146,-0.7773833466208085), Point(-53,-94), true)
-    val podComputed = Visitor(Pod, pod.data).get
-    assert(pod === podComputed)
-  }
-
   it should "compute its angle to destination" in {
     assert(Pod(position, checkpoints, orientation, speed, true).angleToDest == Degree(0))
     assert(Pod(position, checkpoints, orientation.rotate(Degree(90)), speed, true).angleToDest == Degree(90))
@@ -94,12 +87,6 @@ class PlayerSpec extends FlatSpec with Matchers {
     assert(Point(1, 0).scalar(Point(1, 0)) == 1.0)
   }
 
-  it should "be serializable" in {
-    val point = Point(10440.171798564217,-976.1539805655154)
-    val pointComputed = Visitor(Point, point.data).get
-    assert(point === pointComputed)
-  }
-
   it should "measure distance to other" in {
     assert(Point(0, 0).distanceTo(Point(1, 0)) == 1.0)
     assert(Point(0, 3).normalize == Point(0, 1))
@@ -138,45 +125,5 @@ class PlayerSpec extends FlatSpec with Matchers {
     val checkpoints = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
     val pods = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)
     val recorded = RaceRecord(1, checkpoints, List())
-  }
-
-  "Command" should "be serializable" in {
-    val command = Command(Point(10440.171798564217,-976.1539805655154),60,"unknown")
-    val commandComputed = Visitor(Command, command.data).get
-    assert(command === commandComputed)
-  }
-
-  "RaceRecord" should "be serializable" in {
-
-    val recorder = RaceRecord(3, List(Point(5655,-2567),
-          Point(4093,-7460), Point(13488,-2344), Point(12948,-7255)),
-          List(List(Record(Pod(Point(6078,-2770), List(Point(4093,-7460)),
-          Point(-0.08214283837133374,-0.9966205667676646), Point(-5,-57), true),
-          Some(Command(Point(3657.6090240582307,-4526.499598349398),138.57104500478908,"unknown"))),
-          Record(Pod(Point(6922,-3053), List(Point(5655,-2567)),
-          Point(-0.249215005963018,-0.9684481817850932), Point(-17,-65), true),
-          Some(Command(Point(2886.228847463513,1156.3448649671209),60,"unknown"))),
-          Record(Pod(Point(5192,-2487), List(Point(4093,-7460)),
-          Point(-0.5105084131039128,-0.8598727581160626), Point(-29,-49), true),
-          Some(Command(Point(10074.239426897095,-1135.9234506289276),60,"unknown"))),
-          Record(Pod(Point(4341,-2230), List(Point(5655,-2567)),
-          Point(-0.3580156872661533,-0.933715571076837), Point(-24,-63), true),
-          Some(Command(Point(10074.239426897095,-1135.9234506289276),60,"unknown")))),
-          List(Record(Pod(Point(6105,-2962), List(Point(4093,-7460)),
-          Point(0.2298502103747638,-0.9732260173210932), Point(22,-164), true),
-          Some(Command(Point(3731.003718664278,-5048.385737229311),125.76538187685465,"unknown"))),
-          Record(Pod(Point(6909,-3178), List(Point(5655,-2567)),
-          Point(0.06224939096344839,-0.9980606260767326), Point(-12,-107),
-          true),
-          Some(Command(Point(2692.7863103516893,1496.4948207019925),60,"unknown"))),
-          Record(Pod(Point(5021,-2677), List(Point(4093,-7460)),
-          Point(-0.711556089215331,-0.7026292990621612), Point(-146,-162),
-          true),
-          Some(Command(Point(10440.171798564217,-976.1539805655154),60,"unknown"))),
-          Record(Pod(Point(4279,-2340), List(Point(5655,-2567)),
-          Point(-0.6290271316856146,-0.7773833466208085), Point(-53,-94), true),
-          Some(Command(Point(10440.171798564217,-976.1539805655154),60,"unknown"))))))
-    // val computedRecorer = Visitor(RaceRecord, recorder.data).get
-    // assert(recorder === computedRecorer)
   }
 }

@@ -99,7 +99,7 @@ class Game() {
   def initCheckpoints() =
     List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
 
-  def isFinished: Boolean = (count < 50) // FIXME: find better terminaison condition
+  def isFinished: Boolean = (count > 250) // FIXME: find better terminaison condition
 
   def step() = {
     count += 1
@@ -115,12 +115,12 @@ class Game() {
       race.pods.foreach(Print(_))
       val head = Frame(count, actors)
       step()
-      if (isFinished) head #:: Frame(count, actors) #:: frames
+      if (!isFinished) head #:: Frame(count, actors) #:: frames
       else head #:: Frame(count, actors) #:: Stream.empty
     }
     else {
       step()
-      if (isFinished) Frame(count, actors) #:: frames
+      if (!isFinished) Frame(count, actors) #:: frames
       else Frame(count, actors) #:: Stream.empty
     }
   }

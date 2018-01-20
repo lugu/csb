@@ -361,7 +361,7 @@ object Player extends App {
     val commands = player.commands
 
     recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
-    IO.dump()
+    // IO.dump()
 
     if (! race.isFinished) {
       commands.foreach(c => Output(c.answer))

@@ -11,7 +11,7 @@ import csb.player.Race
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.html
-import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation.JSExportTopLevel
 import scala.util.Random
 
 object Screen {
@@ -128,9 +128,8 @@ class Game() {
   def run() = animation.play()
 }
 
-@JSExport
 object Game {
-  @JSExport
+  @JSExportTopLevel("csb.Game.main")
   def main(canvas: html.Canvas): Unit = {
 
     val game = new Game()

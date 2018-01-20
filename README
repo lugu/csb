@@ -1,8 +1,0 @@
-
-sbt "~csbJS/fastOptJS"
-sbt "~csbJVM/testQuick"
-
-# generate target/Player.scala file:
-sbt "~csbJVM/run-main csb.bundle.BundlerMain csb/shared/src/main/scala/csb/player/Player.scala"
-
-surf http://localhost:8080/js/target/scala-2.11/classes/index-dev.html

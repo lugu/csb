@@ -1,4 +1,3 @@
-// shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
 import sbtcrossproject.{crossProject, CrossType}
 
 val sharedSettings = Seq(
@@ -11,27 +10,27 @@ lazy val csb =
     crossType(CrossType.Full).
     settings(sharedSettings).
     jvmSettings(
-      scalaVersion := "2.12.2",
+      scalaVersion := "2.12.4",
       libraryDependencies ++= Seq(
-              "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+              "org.scalatest" %% "scalatest" % "3.0.4" % "test"
       )
     ).
     jsSettings(
-      scalaVersion := "2.11.11",
+      scalaVersion := "2.11.12",
       scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
       // localUrl := ("localhost", 8080),
       libraryDependencies ++= Seq(
-          "org.scala-js" %%% "scalajs-dom" % "0.9.1",
-          "com.lihaoyi" %%% "scalatags" % "0.6.2",
-          "org.scalactic" %%% "scalactic" % "3.0.1" % "test",
-          "org.scalatest" %%% "scalatest" % "3.0.1" % "test"
+          "org.scala-js" %%% "scalajs-dom" % "0.9.4",
+          "com.lihaoyi" %%% "scalatags" % "0.6.7",
+          "org.scalactic" %%% "scalactic" % "3.0.4" % "test",
+          "org.scalatest" %%% "scalatest" % "3.0.4" % "test"
       )
     ).
     nativeSettings(
-      scalaVersion := "2.11.11",
+      scalaVersion := "2.11.12",
       nativeGC := "immix"
     )
 
-lazy val csbJS 	   = csb.js.enablePlugins(ScalaJSPlugin) // , WorkbenchPlugin)
+lazy val csbJS 	   = csb.js.enablePlugins(ScalaJSPlugin)
 lazy val csbJVM    = csb.jvm
 lazy val csbNative = csb.native.enablePlugins(ScalaNativePlugin)

@@ -131,7 +131,6 @@ class Game() {
 object Game {
   @JSExportTopLevel("csb.Game.main")
   def main(canvas: html.Canvas): Unit = {
-
     val game = new Game()
     game.run()
   }
@@ -267,12 +266,12 @@ case class Animation(timeline: Timeline) {
 
 class WindowController(animation: Animation) {
   def keypress(event: dom.raw.KeyboardEvent) = event.key match {
-    case "PageUp"     => animation.begining()
-    case "PageDown"   => animation.end()
-    case "ArrowLeft"  => animation.stepBackward()
-    case "ArrowRight" => animation.stepForward()
-    case " "          => animation.playSwitch()
+    case "PageUp"     => animation.begining(); event.preventDefault()
+    case "PageDown"   => animation.end(); event.preventDefault()
+    case "ArrowLeft"  => animation.stepBackward(); event.preventDefault()
+    case "ArrowRight" => animation.stepForward(); event.preventDefault()
+    case " "          => animation.playSwitch(); event.preventDefault()
   }
-  dom.window.addEventListener[dom.raw.KeyboardEvent]("keypress", keypress _)
+  dom.window.addEventListener[dom.raw.KeyboardEvent]("keydown", keypress _)
 }
 

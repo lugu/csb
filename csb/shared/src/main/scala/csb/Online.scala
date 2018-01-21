@@ -1,4 +1,4 @@
-package csb.player 
+package csb
 
 object Online extends App {
 

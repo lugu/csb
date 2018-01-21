@@ -1,4 +1,4 @@
-package csb.player
+package csb
 
 object Records {
   val checkpoints = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)

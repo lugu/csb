@@ -1,13 +1,5 @@
 package csb
 
-import csb.player.Command
-import csb.player.RaceRecord
-import csb.player.MetaPlayer
-import csb.player.Pod
-import csb.player.Point
-import csb.player.Print
-import csb.player.Race
-
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.html
@@ -117,7 +109,6 @@ class Game(var state: GameState) {
   def step() = {
     val newcurrentStep = currentStep + 1
     Print("race step: " + currentStep)
-    race.pods.foreach(Print(_))
     val newRace = race.simulate(commands)
     val newRecorder = recorder.updateWith(newRace, commands.map(c => Some(c)))
     if (race.isFinished) recorder.dump()
@@ -126,7 +117,6 @@ class Game(var state: GameState) {
 
   def frames: Stream[Frame] = {
     if (currentStep == 0) {
-      race.pods.foreach(Print(_))
       val head = Frame(currentStep, actors)
       step()
       if (!race.isFinished) head #:: Frame(currentStep, actors) #:: frames

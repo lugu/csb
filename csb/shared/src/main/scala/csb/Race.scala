@@ -1,4 +1,4 @@
-package csb.player
+package csb
 
 import math._
 import math.{ sqrt, Pi }

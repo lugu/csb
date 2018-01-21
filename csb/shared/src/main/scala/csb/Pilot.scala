@@ -1,4 +1,4 @@
-package csb.player
+package csb
 
 import math.{ abs, min, max, sin, Pi }
 
@@ -289,7 +289,7 @@ case class PilotSkip(pod: Pod, race: Race) extends Pilot {
 // if far from the checkpoint, set goal to a interior of the turn
 // move your previous destination in the direction of the goal
 // if turn angle > some value then stop the motors
-case class Pilot3(pod: Pod, race: Race) extends Pilot {
+case class Pilot2(pod: Pod, race: Race) extends Pilot {
 
   val skidAngle = Degree(30)
   val skidSpeed = 250
@@ -335,4 +335,3 @@ case class Pilot0(pod: Pod) extends Pilot {
   def thrust = 200
   def label = "PILOT0"
 }
-

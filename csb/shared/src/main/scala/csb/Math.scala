@@ -1,4 +1,4 @@
-package csb.player
+package csb
 
 import math.{ atan2, sqrt, pow, cos, sin, Pi }
 

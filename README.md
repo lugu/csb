@@ -1,21 +1,25 @@
 # Run
 ## Build optimized version:
 
-    sbt "~csbJS/fullOptJS"
+    sbt "csbJS/fullOptJS"
     firefox ./csb/js/target/scala-2.11/classes/index-opt.html
 
 ## Build develepment version:
 
-    sbt "~csbJS/fastOptJS"
+    sbt "csbJS/fastOptJS"
     firefox ./csb/js/target/scala-2.11/classes/index-dev.html
 
 ## Run test suite:
 
-    sbt "~csbJVM/testQuick"
+    sbt "csbJVM/testQuick"
+
+## Run simulation:
+
+    sbt "csbNative/runMain csb.Simulation"
 
 ## Generate target/Player.scala for the online competition:
 
-    sbt "~csbJVM/run-main csb.bundle.BundlerMain csb/shared/src/main/scala/csb/player/Player.scala"
+    sbt "csbJVM/run-main csb.bundle.BundlerMain csb/shared/src/main/scala/csb/player/Player.scala"
 
 # Project
 
@@ -24,9 +28,9 @@
     - can display a race in the browser
 
 ## TODO
-	- play against yourself in a native app
-	- profile and optimize the code
-	- play against yourself in the web browser
+    - pass pilot parameters via implicit config
+    - improve the parameters
+    - visualize the races
 
 
 # Resources

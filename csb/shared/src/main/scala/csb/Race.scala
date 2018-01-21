@@ -202,7 +202,8 @@ case class Race (
 object Race {
 
   def initPods(checkpoints: List[Point], laps: Int): List[Pod] = {
-    val destinations = (for (i ← 0 to laps) yield checkpoints).flatten.toList
+    val checkpointsShift = checkpoints.tail :+ checkpoints.head
+    val destinations = (for (i ← 0 to laps) yield checkpointsShift).flatten.toList
     val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
     val positions = List(1, 3, -1, -3).map(pos ⇒ checkpoints(0) + departLine * (pos * 450))
     positions.map(p ⇒ Pod(p, destinations, (checkpoints(1) - p).normalize, Point(0, 0), true))

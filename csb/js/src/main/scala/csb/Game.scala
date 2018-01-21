@@ -89,6 +89,9 @@ class Game(var state: GameState) {
 
   val loggers = List(new Logger(), new Logger(), Logger.default)
 
+  val playerA = new Player()
+  val playerB = new Player()
+
   def loggerA = loggers(0)
   def loggerB = loggers(1)
 
@@ -102,10 +105,10 @@ class Game(var state: GameState) {
   def commands = {
     val cmds = {
       loggerA.makeDefault()
-      Player(race).commands
+      playerA.commands(race)
     } ::: {
       loggerB.makeDefault()
-      Player(race.inverted).commands
+      playerB.commands(race.inverted)
     }
     Logger.default.makeDefault()
     cmds

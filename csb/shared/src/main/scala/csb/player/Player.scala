@@ -220,9 +220,11 @@ object Print {
   }
 }
 
-case class Player(var race: Race) {
-  var pilots: List[Pilot] = List(Pilot(race.pod0, race), Pilot(race.pod1, race))
-  def commands = pilots.map(_.command)
+class Player {
+  def commands(race: Race): List[Command] = {
+    val pilots: List[Pilot] = List(Pilot(race.pod0, race), Pilot(race.pod1, race))
+    pilots.map(_.command)
+  }
 }
 
 case class PodUpdate(position: Point, destination: Point, orientation: Point, speed: Point) 
@@ -356,9 +358,10 @@ object Player extends App {
 
   var recorder = RaceRecord(laps, checkpoints, List())
 
+  val player = new Player()
+
   while (!race.isFinished) {
-    val player = Player(race)
-    val commands = player.commands
+    val commands = player.commands(race)
 
     recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
     // IO.dump()

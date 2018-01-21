@@ -11,7 +11,7 @@ object Records {
 case class Simulation(record: RaceRecord) {
   def step(i: Int) = {
     val race = record.step(i)
-    val commands = Player(race).commands ::: Player(race.inverted).commands
+    val commands = (new Player).commands(race) ::: (new Player).commands(race.inverted)
     race.pods.foreach(Print(_))
     race.simulate(commands)
   }

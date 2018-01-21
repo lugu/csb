@@ -2,7 +2,7 @@ package csb
 
 import csb.player.Command
 import csb.player.RaceRecord
-import csb.player.Player
+import csb.player.MetaPlayer
 import csb.player.Pod
 import csb.player.Point
 import csb.player.Print
@@ -89,8 +89,8 @@ class Game(var state: GameState) {
 
   val loggers = List(new Logger(), new Logger(), Logger.default)
 
-  val playerA = new Player()
-  val playerB = new Player()
+  val playerA = new MetaPlayer()
+  val playerB = new MetaPlayer()
 
   def loggerA = loggers(0)
   def loggerB = loggers(1)

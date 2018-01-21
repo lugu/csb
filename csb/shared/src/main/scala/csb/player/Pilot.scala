@@ -78,7 +78,6 @@ object Pilot {
   def boost = -1
   def shield = -2
   def thrustMax = -3
-  def apply(pod: Pod, race: Race): Pilot = MetaPilot(pod, race)
 }
 
 case class MetaPilot(pod: Pod, race: Race) extends Pilot {

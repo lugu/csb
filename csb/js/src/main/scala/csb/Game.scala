@@ -106,12 +106,14 @@ class Game(var state: GameState) {
     cmds
   }
 
+  def isFinished: Boolean = if (currentStep > 3000) true else race.isFinished
+
   def step() = {
     val newcurrentStep = currentStep + 1
     Print("race step: " + currentStep)
     val newRace = race.simulate(commands)
     val newRecorder = recorder.updateWith(newRace, commands.map(c => Some(c)))
-    if (race.isFinished) recorder.dump()
+    if (isFinished) recorder.dump()
     state = GameState(newRace, newRecorder, newcurrentStep)
   }
 
@@ -119,12 +121,12 @@ class Game(var state: GameState) {
     if (currentStep == 0) {
       val head = Frame(currentStep, actors)
       step()
-      if (!race.isFinished) head #:: Frame(currentStep, actors) #:: frames
+      if (!isFinished) head #:: Frame(currentStep, actors) #:: frames
       else head #:: Frame(currentStep, actors) #:: Stream.empty
     }
     else {
       step()
-      if (!race.isFinished) Frame(currentStep, actors) #:: frames
+      if (!isFinished) Frame(currentStep, actors) #:: frames
       else Frame(currentStep, actors) #:: Stream.empty
     }
   }

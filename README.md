@@ -24,7 +24,6 @@
     - can display a race in the browser
 
 ## TODO
-	- refactor the code to enable multiple files (https://github.com/TrueLaurel/CodinGame-Scala-Kit)
 	- play against yourself in a native app
 	- profile and optimize the code
 	- play against yourself in the web browser

@@ -99,15 +99,13 @@ class Game() {
   def initCheckpoints() =
     List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
 
-  def isFinished: Boolean = (count > 250) // FIXME: find better terminaison condition
-
   def step() = {
     count += 1
     Print("race step: " + count)
     race.pods.foreach(Print(_))
     race = race.simulate(commands)
     recorder = recorder.updateWith(race, commands.map(c => Some(c)))
-    if (isFinished) recorder.dump()
+    if (race.isFinished) recorder.dump()
   }
 
   def frames: Stream[Frame] = {
@@ -115,12 +113,12 @@ class Game() {
       race.pods.foreach(Print(_))
       val head = Frame(count, actors)
       step()
-      if (!isFinished) head #:: Frame(count, actors) #:: frames
+      if (!race.isFinished) head #:: Frame(count, actors) #:: frames
       else head #:: Frame(count, actors) #:: Stream.empty
     }
     else {
       step()
-      if (!isFinished) Frame(count, actors) #:: frames
+      if (!race.isFinished) Frame(count, actors) #:: frames
       else Frame(count, actors) #:: Stream.empty
     }
   }

@@ -1,28 +1,25 @@
 package csb
 
-object Records {
-  val checkpoints = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
-  val pods = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)
-  val recorded = RaceRecord(1, checkpoints, List())
-
-  def apply(args: Array[String]): RaceRecord = recorded
-}
-
-case class Simulation(record: RaceRecord) {
-  def step(i: Int) = {
-    val race = record.step(i)
-    val commands = (new MetaPlayer).commands(race) ::: (new MetaPlayer).commands(race.inverted)
-    race.pods.foreach(Print(_))
-    race.simulate(commands)
-  }
-}
-
 object Simulation extends App {
-  val simulation = Simulation(Records(args))
-  for (i <- 0 to 100) {
-    Print("race step: " + i)
-    simulation.step(i)
-  }
+  def defaultPlayer() = new MetaPlayer()
+  def defaultCheckpoints = List(Point(5655,-2567), Point(4093,-7460), Point(13488,-2344), Point(12948,-7255))
+  def apply(): Simulation = Simulation(new Race(defaultCheckpoints, 3), 0, defaultPlayer(), defaultPlayer())
+
+  println("Starting simulation.")
+  val sim = Simulation().run()
+  println("Simulation completed.")
 }
 
+case class Simulation(val race: Race, val step: Int, playerA: Player, playerB: Player) {
 
+  def commands = playerA.commands(race) ::: playerB.commands(race.inverted)
+  def isFinished: Boolean = if (step > 3000) true else race.isFinished
+
+  def next: Simulation = {
+    Print("race step: " + step)
+    Simulation(race.simulate(commands), step + 1, playerA, playerB)
+  }
+
+  @scala.annotation.tailrec
+  final def run(): Simulation = if (isFinished) this else next.run()
+}

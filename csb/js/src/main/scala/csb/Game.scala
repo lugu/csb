@@ -109,6 +109,7 @@ class Game(var state: GameState) {
   def isFinished: Boolean = if (currentStep > 3000) true else race.isFinished
 
   def step() = {
+
     val newcurrentStep = currentStep + 1
     Print("race step: " + currentStep)
     val newRace = race.simulate(commands)

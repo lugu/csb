@@ -29,8 +29,6 @@ case class PilotTest(pod: Pod) extends Pilot {
   def label = "TEST"
   def direction = pod.position + (pod.orientation * 1000) + Point(-100, 0)
   def thrust = 100
-  // Print(">>> Current pod: " + pod)
-  // Print(">>> Next pod: " + pod.update(direction, thrust))
 }
 
 case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
@@ -56,9 +54,6 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
     val directionToDestinationAngle =
       (pod.destination - pod.position).radianWith(pilot.direction - pod.position)
     val directionToOrientationAngle = pod.angleToDest + directionToDestinationAngle
-
-    // Print("directionToDestinationAngle ", directionToDestinationAngle)
-    // Print("directionToOrientationAngle ", directionToOrientationAngle)
 
     if (pod.badCollision(race.enemy0))
       Pilot.shield

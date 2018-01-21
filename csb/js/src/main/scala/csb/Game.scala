@@ -65,12 +65,27 @@ class Logger {
   def makeDefault() = Print.setPrinter { message => print(message) }
 }
 
-// Game connect the simulation with the board
-class Game() {
+case class GameState(race: Race, recorder: RaceRecord, count: Int)
 
-  var count = 0
-  var race = new Race(initCheckpoints, 3)
-  var recorder = RaceRecord(race.laps, race.checkpoints, List())
+// Game connect the simulation with the board
+class Game(var state: GameState) {
+
+  def this(race: Race, recorder: RaceRecord, count: Int) {
+    this(GameState(race, recorder, count))
+  }
+  def this(race: Race) {
+    this(race, RaceRecord(race.laps, race.checkpoints, List()), 0)
+  }
+  def this(checkpoints: List[Point], laps: Int) {
+    this(new Race(checkpoints, laps))
+  }
+  def this() {
+    this(List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }, 3)
+  }
+
+  def count = state.count
+  def recorder = state.recorder
+  def race = state.race
 
   val loggers = List(new Logger(), new Logger(), Logger.default)
 
@@ -96,16 +111,14 @@ class Game() {
     cmds
   }
 
-  def initCheckpoints() =
-    List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
-
   def step() = {
-    count += 1
+    val newCount = count + 1
     Print("race step: " + count)
     race.pods.foreach(Print(_))
-    race = race.simulate(commands)
-    recorder = recorder.updateWith(race, commands.map(c => Some(c)))
+    val newRace = race.simulate(commands)
+    val newRecorder = recorder.updateWith(newRace, commands.map(c => Some(c)))
     if (race.isFinished) recorder.dump()
+    state = GameState(newRace, newRecorder, newCount)
   }
 
   def frames: Stream[Frame] = {

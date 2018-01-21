@@ -65,13 +65,13 @@ class Logger {
   def makeDefault() = Print.setPrinter { message => print(message) }
 }
 
-case class GameState(race: Race, recorder: RaceRecord, count: Int)
+case class GameState(race: Race, recorder: RaceRecord, currentStep: Int)
 
 // Game connect the simulation with the board
 class Game(var state: GameState) {
 
-  def this(race: Race, recorder: RaceRecord, count: Int) {
-    this(GameState(race, recorder, count))
+  def this(race: Race, recorder: RaceRecord, currentStep: Int) {
+    this(GameState(race, recorder, currentStep))
   }
   def this(race: Race) {
     this(race, RaceRecord(race.laps, race.checkpoints, List()), 0)
@@ -83,7 +83,7 @@ class Game(var state: GameState) {
     this(List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }, 3)
   }
 
-  def count = state.count
+  def currentStep = state.currentStep
   def recorder = state.recorder
   def race = state.race
 
@@ -112,27 +112,27 @@ class Game(var state: GameState) {
   }
 
   def step() = {
-    val newCount = count + 1
-    Print("race step: " + count)
+    val newcurrentStep = currentStep + 1
+    Print("race step: " + currentStep)
     race.pods.foreach(Print(_))
     val newRace = race.simulate(commands)
     val newRecorder = recorder.updateWith(newRace, commands.map(c => Some(c)))
     if (race.isFinished) recorder.dump()
-    state = GameState(newRace, newRecorder, newCount)
+    state = GameState(newRace, newRecorder, newcurrentStep)
   }
 
   def frames: Stream[Frame] = {
-    if (count == 0) {
+    if (currentStep == 0) {
       race.pods.foreach(Print(_))
-      val head = Frame(count, actors)
+      val head = Frame(currentStep, actors)
       step()
-      if (!race.isFinished) head #:: Frame(count, actors) #:: frames
-      else head #:: Frame(count, actors) #:: Stream.empty
+      if (!race.isFinished) head #:: Frame(currentStep, actors) #:: frames
+      else head #:: Frame(currentStep, actors) #:: Stream.empty
     }
     else {
       step()
-      if (!race.isFinished) Frame(count, actors) #:: frames
-      else Frame(count, actors) #:: Stream.empty
+      if (!race.isFinished) Frame(currentStep, actors) #:: frames
+      else Frame(currentStep, actors) #:: Stream.empty
     }
   }
 

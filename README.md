@@ -28,7 +28,7 @@
     - can display a race in the browser
 
 ## TODO
-    - pass pilot parameters via implicit config
+    - fix meta pilot double lock
     - improve the parameters
     - visualize the races
 

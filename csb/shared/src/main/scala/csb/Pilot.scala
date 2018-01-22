@@ -25,17 +25,17 @@ trait Pilot {
   def command = Command(direction, thrust, label)
 }
 
-case class PilotTest(pod: Pod) extends Pilot {
+case class PilotTest(pod: Pod)(implicit val config: Config) extends Pilot {
   def label = "TEST"
   def direction = pod.position + (pod.orientation * 1000) + Point(-100, 0)
   def thrust = 100
 }
 
-case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
+case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race)(implicit val config: Config) extends Pilot {
   def label = pilot.label + "-CORRECTED"
   // correction of the direction takes inertia into account
   def direction = pod.position +
-    ((pilot.direction - pod.position).normalize - pod.speed.normalize * 0.5) * 5000
+    ((pilot.direction - pod.position).normalize - pod.speed.normalize * config.speedFactorCorrected) * config.reactionDistanceCorrected
 
   def thrust = {
     if (pod.badCollision(race.enemy0))
@@ -47,9 +47,9 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
   }
 
   def thrustCorrection = {
-    val maxAngle = Degree(18)
-    val minAngle = Degree(90)
-    val minSpeed = 60
+    val maxAngle = Degree(config.maxAngleCorrected)
+    val minAngle = Degree(config.minAngleCorrected)
+    val minSpeed = config.minSpeedCorrected
 
     val directionToDestinationAngle =
       (pod.destination - pod.position).radianWith(pilot.direction - pod.position)
@@ -59,12 +59,12 @@ case class PilotCorrected(pilot: Pilot, pod: Pod, race: Race) extends Pilot {
       Pilot.shield
     else if (pod.badCollision(race.enemy1))
       Pilot.shield
-    else if (directionToOrientationAngle < maxAngle) 200
+    else if (directionToOrientationAngle < maxAngle) config.maxSpeedCorrected
     else if (directionToOrientationAngle > minAngle) minSpeed
     else {
       val ratio = 1 - (abs(directionToOrientationAngle.degree) - maxAngle.degree) /
         (minAngle.degree - maxAngle.degree)
-      minSpeed + (150 - minSpeed) * ratio
+      minSpeed + (config.minSpeedOffsetCorrected - minSpeed) * ratio
     }
   }
 }
@@ -75,7 +75,7 @@ object Pilot {
   def thrustMax = -3
 }
 
-case class MetaPilot(pod: Pod, race: Race) extends Pilot {
+case class MetaPilot(pod: Pod, race: Race)(implicit val config: Config) extends Pilot {
 
   def direction = pilot.direction
   def thrust = pilot.thrust
@@ -116,7 +116,6 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
   }
 
   def chooseAttack: Option[Pilot] = {
-    val someSpeed = 200
     val e = race.enemies.filter(o ⇒ pod.detectCollision(o))
     if (!e.isEmpty && pod.score > friend.score)
       Some(PilotAttack(pod, e.head))
@@ -149,8 +148,8 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
 
   // choose boost for the longest distance
   def chooseBoost: Option[Pilot] = {
-    val smallAngle = Degree(30)
-    val longDistance = 4000
+    val smallAngle = Degree(config.smallAngleBoost)
+    val longDistance = config.longDistanceBoost
 
     if (pod.boostCollide(race.friend(pod)) ||
       pod.boostCollide(race.enemy0) ||
@@ -166,9 +165,9 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
 
   // do not choose skip if a collision is detected
   def chooseSkip: Option[Pilot] = {
-    val skipAngle = Degree(30)
-    val skipDistance = 2000
-    val skipSpeed = 350
+    val skipAngle = Degree(config.skipAngle)
+    val skipDistance = config.skipDistance
+    val skipSpeed = config.skipSpeed
     if (pod.detectCollision(race.friend(pod))
       || pod.detectCollision(race.enemy0)
       || pod.detectCollision(race.enemy1)) None
@@ -179,13 +178,13 @@ case class MetaPilot(pod: Pod, race: Race) extends Pilot {
   }
 
   def choosePilot1: Option[Pilot] = {
-    val directDistance = 5000
+    val directDistance = config.choosePilot1Distance
     if (pod.distance > directDistance) Some(Pilot1(pod, race))
     else None
   }
 }
 
-case class PilotHit(pod: Pod, race: Race, enemy: Pod) extends Pilot {
+case class PilotHit(pod: Pod, race: Race, enemy: Pod)(implicit val config: Config) extends Pilot {
   def label = "HIT"
   def thrust = if (pod.detectCollision(enemy)) {
     if (pod.boostAvailable) {
@@ -193,7 +192,7 @@ case class PilotHit(pod: Pod, race: Race, enemy: Pod) extends Pilot {
     }
     else Pilot.shield
   }
-  else 200
+  else config.speedPilotHit
   // case 1: i am in front of the enemy
   // case 2: i am behind the enemy
 
@@ -209,38 +208,35 @@ case class PilotHit(pod: Pod, race: Race, enemy: Pod) extends Pilot {
     direction1 else direction2
 }
 
-case class PilotWait(pod: Pod, race: Race, checkpoint: Point) extends Pilot {
+case class PilotWait(pod: Pod, race: Race, checkpoint: Point)(implicit val config: Config) extends Pilot {
   def previousCheckpoint = race.previousCheckpoint(checkpoint)
   def directionToPrevious = (previousCheckpoint - checkpoint).normalize
   val position = checkpoint + (directionToPrevious * (pod.checkpointRadius * 2))
 
   val dist = max(pod.position.distanceTo(position) - pod.podRadius, 0)
-  val smallDistance = 2500
+  val smallDistance = config.smallDistancePilotWait
 
   def label = "WAIT"
   def direction = position
   def thrust = {
-    val t = if (dist > smallDistance) 200 else (dist / smallDistance) * 200
-    // Print("dis " + dist)
-    // Print("thrust " + t)
-    t
+    if (dist > smallDistance) config.maxSpeedPilotWait else (dist / smallDistance) * config.maxSpeedPilotWait
   }
 }
 
-case class PilotAvoid(pod: Pod, other: Pod) extends Pilot {
+case class PilotAvoid(pod: Pod, other: Pod)(implicit val config: Config) extends Pilot {
   def label = "AVOID"
 
   def distanceBeforeMove = pod.position.distanceTo(other.position + other.speed)
   def distanceAfterMove = (pod.position + pod.speed).distanceTo(other.position + other.speed)
 
   // goal: direction opposite to the other
-  def direction = pod.position + (other.position - pod.position).rotate(Degree(90))
+  def direction = pod.position + (other.position - pod.position).rotate(Degree(config.anglePilotAvoid))
 
-  def thrust = if (distanceBeforeMove > distanceAfterMove) 0 else 200
+  def thrust = if (distanceBeforeMove > distanceAfterMove) 0 else config.maxSpeedPilotAvoid
 }
 
-case class PilotFight(pod: Pod, race: Race, enemy: Pod) extends Pilot {
-  val veryLarge = 3000
+case class PilotFight(pod: Pod, race: Race, enemy: Pod)(implicit val config: Config) extends Pilot {
+  val veryLarge = config.largeDistancePilotFight
   val pilot = if (pod.distanceToPod(enemy) < veryLarge ||
     enemy.score > race.laps * race.checkpoints.size - 2)
     PilotHit(pod, race, enemy)
@@ -255,25 +251,25 @@ case class PilotFight(pod: Pod, race: Race, enemy: Pod) extends Pilot {
   def label = pilot.label
 }
 
-case class PilotDefense(pod: Pod) extends Pilot {
+case class PilotDefense(pod: Pod)(implicit val config: Config) extends Pilot {
   def direction = pod.destination
   def thrust = Pilot.shield
   def label = "DEFENSE"
 }
 
-case class PilotAttack(pod: Pod, enemy: Pod) extends Pilot {
+case class PilotAttack(pod: Pod, enemy: Pod)(implicit val config: Config) extends Pilot {
   def direction = enemy.position + enemy.speed
   def thrust = Pilot.shield
   def label = "ATTACK"
 }
 
-case class PilotBoost(pod: Pod) extends Pilot {
+case class PilotBoost(pod: Pod)(implicit val config: Config) extends Pilot {
   def direction = pod.destination
   def thrust = Pilot.boost
   def label = "BOOST"
 }
 
-case class PilotSkip(pod: Pod, race: Race) extends Pilot {
+case class PilotSkip(pod: Pod, race: Race)(implicit val config: Config) extends Pilot {
   def label = "SKIP"
   def direction = pod.nextDestination(race)
   def thrust = Pilot.thrustMax
@@ -284,12 +280,12 @@ case class PilotSkip(pod: Pod, race: Race) extends Pilot {
 // if far from the checkpoint, set goal to a interior of the turn
 // move your previous destination in the direction of the goal
 // if turn angle > some value then stop the motors
-case class Pilot2(pod: Pod, race: Race) extends Pilot {
+case class Pilot2(pod: Pod, race: Race)(implicit val config: Config) extends Pilot {
 
-  val skidAngle = Degree(30)
-  val skidSpeed = 250
+  val skidAngle = Degree(config.skipAnglePilot2)
+  val skidSpeed = config.skipSpeedPilot2
 
-  val shallSkid: Boolean = if (pod.stepsToDestination < 4 &&
+  val shallSkid: Boolean = if (pod.stepsToDestination < config.stepsToDestinationPilot2 &&
     pod.speedAngleToDest < skidAngle &&
     pod.speed.norm > skidSpeed) true else false
 
@@ -297,20 +293,20 @@ case class Pilot2(pod: Pod, race: Race) extends Pilot {
 
   def direction = if (shallSkid) skidDirection else pod.innerDirection(race)
 
-  def thrust = 200
-  def label = "PILOT3"
+  def thrust = config.maxSpeedPilot2
+  def label = "PILOT2"
 }
 
-case class Pilot1(pod: Pod, race: Race) extends Pilot {
+case class Pilot1(pod: Pod, race: Race)(implicit val config: Config) extends Pilot {
 
   def newAngle0(angle: Angle) = {
-    val ratio = 2
+    val ratio = config.ratioPilot1
     // angle in [-Pi, Pi]
     if (angle < Radian(0)) -Radian((-Pi / ratio) - (angle.radian / ratio))
     else -Radian((Pi / ratio) - (angle.radian / ratio))
   }
 
-  def newAngle1(angle: Angle) = Radian(sin(angle.radian) / 4)
+  def newAngle1(angle: Angle) = Radian(sin(angle.radian) / config.angleDenumPilot1)
 
   def direction = {
     val a = -pod.destinationDirection
@@ -321,12 +317,12 @@ case class Pilot1(pod: Pod, race: Race) extends Pilot {
     pod.position + objective
   }
 
-  def thrust = 200
+  def thrust = config.maxSpeedPilot1
   def label = "PILOT1"
 }
 
-case class Pilot0(pod: Pod) extends Pilot {
+case class Pilot0(pod: Pod)(implicit val config: Config) extends Pilot {
   def direction = pod.destination
-  def thrust = 200
+  def thrust = config.maxSpeedPilot0
   def label = "PILOT0"
 }

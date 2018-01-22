@@ -4,7 +4,6 @@ import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.html
 import scala.scalajs.js.annotation.JSExportTopLevel
-import scala.util.Random
 
 object Screen {
   def width = 860

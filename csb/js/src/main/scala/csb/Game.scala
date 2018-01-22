@@ -94,8 +94,8 @@ class Game(var state: GameState) {
 
   val loggers = List(new Logger(), new Logger(), Logger.default)
 
-  val playerA = new MetaPlayer()
-  val playerB = new MetaPlayer()
+  val playerA = new MetaPlayer(DefaultConfig.randomize)
+  val playerB = new MetaPlayer(DefaultConfig.randomize)
 
   def loggerA = loggers(0)
   def loggerB = loggers(1)

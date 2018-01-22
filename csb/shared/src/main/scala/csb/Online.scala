@@ -21,7 +21,7 @@ object Online extends App {
 
   var recorder = RaceRecord(laps, checkpoints, List())
 
-  val player = new MetaPlayer()
+  val player = new MetaPlayer(DefaultConfig)
 
   while (!race.isFinished) {
     val commands = player.commands(race)

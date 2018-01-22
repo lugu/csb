@@ -74,7 +74,7 @@ object DefaultConfig extends Config(Map(
 
 
 trait Configurable {
-  implicit val config = DefaultConfig.randomize
+  implicit val config = DefaultConfig
 }
 
 trait RandomConfig {
@@ -89,32 +89,15 @@ trait PilotConstructor extends Player {
   def pilot(pod: Pod, race: Race): Pilot
 }
 
-trait SimplePlayer extends Player with PilotConstructor with Configurable {
+trait SimplePlayer extends Player with PilotConstructor {
   def commands(race: Race): List[Command] = {
     val pilots: List[Pilot] = List(pilot(race.pod0, race), pilot(race.pod1, race))
     pilots.map(_.command)
   }
 }
 
-class MetaPlayer extends SimplePlayer {
+class MetaPlayer(val config: Config) extends SimplePlayer {
   def pilot(pod: Pod, race: Race): Pilot = {
-    MetaPilot(pod, race)
+    MetaPilot(pod, race)(config)
   }
 }
-
-class Player0 extends SimplePlayer {
-  def pilot(pod: Pod, race: Race): Pilot = Pilot0(pod)
-}
-
-class Player1 extends SimplePlayer {
-  def pilot(pod: Pod, race: Race): Pilot = Pilot1(pod, race)
-}
-
-class Player2 extends SimplePlayer {
-  def pilot(pod: Pod, race: Race): Pilot = Pilot2(pod, race)
-}
-
-class PlayerDefense extends SimplePlayer {
-  def pilot(pod: Pod, race: Race): Pilot = PilotDefense(pod)
-}
-

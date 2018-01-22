@@ -1,7 +1,7 @@
 package csb
 
 object Simulation extends App {
-  def defaultPlayer() = new MetaPlayer()
+  def defaultPlayer() = new MetaPlayer(DefaultConfig.randomize)
   def defaultCheckpoints = List(Point(5655,-2567), Point(4093,-7460), Point(13488,-2344), Point(12948,-7255))
   def apply(): Simulation = Simulation(new Race(defaultCheckpoints, 3), 0, defaultPlayer(), defaultPlayer())
 

@@ -15,27 +15,34 @@ object Board {
   def width = 16000
   def height = 9000
   def canvas = document.getElementById("canvas").asInstanceOf[html.Canvas]
-  val renderer = canvas.getContext("2d")
+  val renderer = canvas
+    .getContext("2d")
     .asInstanceOf[dom.CanvasRenderingContext2D]
   def clear() = renderer.clearRect(0, 0, Screen.width, Screen.height)
 
-  def sprite(name: String) = Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement], renderer)
-  val sprites: List[Sprite] = List(sprite("podA"), sprite("podA"), sprite("podB"), sprite("podB"))
+  def sprite(name: String) =
+    Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement],
+           renderer)
+  val sprites: List[Sprite] =
+    List(sprite("podA"), sprite("podA"), sprite("podB"), sprite("podB"))
 
   val terminals = {
     val tags = List("terminalA", "terminalB", "terminal0")
-    tags.map(t => new Terminal(document.getElementById(t).asInstanceOf[html.Span]))
+    tags.map(t =>
+      new Terminal(document.getElementById(t).asInstanceOf[html.Span]))
   }
 }
 
 object Pixel {
   def fromPoint(p: Point): Pixel =
-    Pixel((p.x / Board.width * Screen.width).toInt, (-p.y / Board.height * Screen.height).toInt)
+    Pixel((p.x / Board.width * Screen.width).toInt,
+          (-p.y / Board.height * Screen.height).toInt)
 }
 
 // Pixel is the coordinate system for the Board
 case class Pixel(x: Int, y: Int) {
-  def toPoint = Point(x * Board.width / Screen.width, -y * Board.width / Screen.width)
+  def toPoint =
+    Point(x * Board.width / Screen.width, -y * Board.width / Screen.width)
 }
 
 object Logger {
@@ -53,7 +60,9 @@ class Logger {
   def print(msg: String): Unit = {
     data = data :+ msg
   }
-  def makeDefault() = Print.setPrinter { message => print(message) }
+  def makeDefault() = Print.setPrinter { message =>
+    print(message)
+  }
 }
 
 case class GameState(race: Race, recorder: RaceRecord, currentStep: Int)
@@ -71,7 +80,12 @@ class Game(var state: GameState) {
     this(new Race(checkpoints, laps))
   }
   def this() {
-    this(List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }, 3)
+    this(
+      List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390))
+        .map { p =>
+          p.toPoint
+        },
+      3)
   }
 
   def currentStep = state.currentStep
@@ -89,8 +103,11 @@ class Game(var state: GameState) {
   val animation = new Animation(FrameTimeline(frames))
   val controller = new WindowController(animation)
 
-  def podActors = race.pods.zip(Board.sprites).map{ case (pod, sprite) => PodActor(pod, sprite) }
-  def logActors = loggers.zip(Board.terminals).map{ case (l, t) => LogActor(l.flush, t) }
+  def podActors = race.pods.zip(Board.sprites).map {
+    case (pod, sprite) => PodActor(pod, sprite)
+  }
+  def logActors =
+    loggers.zip(Board.terminals).map { case (l, t) => LogActor(l.flush, t) }
   def actors = logActors ::: podActors
 
   def commands = {
@@ -123,8 +140,7 @@ class Game(var state: GameState) {
       step()
       if (!isFinished) head #:: Frame(currentStep, actors) #:: frames
       else head #:: Frame(currentStep, actors) #:: Stream.empty
-    }
-    else {
+    } else {
       step()
       if (!isFinished) Frame(currentStep, actors) #:: frames
       else Frame(currentStep, actors) #:: Stream.empty
@@ -142,7 +158,8 @@ object Game {
   }
 }
 
-case class Sprite(image: dom.raw.HTMLImageElement, renderer: dom.CanvasRenderingContext2D) {
+case class Sprite(image: dom.raw.HTMLImageElement,
+                  renderer: dom.CanvasRenderingContext2D) {
   def displayAt(position: Pixel, angle: Double) = {
     val width = image.naturalWidth
     val height = image.naturalHeight
@@ -164,11 +181,12 @@ case class Terminal(element: html.Span) {
     while (element.hasChildNodes) element.removeChild(element.firstChild)
     element.appendChild(ul().render)
   }
-  def format(message: String) = {
-  }
+  def format(message: String) = {}
   def print(message: String) = {
     import scalatags.JsDom.all._
-    message.split("\n").foreach(m => element.firstChild.appendChild(li(m).render))
+    message
+      .split("\n")
+      .foreach(m => element.firstChild.appendChild(li(m).render))
   }
 }
 
@@ -213,8 +231,9 @@ case class FrameTimeline(frames: Stream[Frame]) extends Timeline {
     case Some(f) => f.time
     case None    => computeDuration()
   }
-  def previousTime: Int = if (time == 0) 0
-  else frames.takeWhile(f => f.time < time).last.time
+  def previousTime: Int =
+    if (time == 0) 0
+    else frames.takeWhile(f => f.time < time).last.time
 
   def frame: Frame = frames.find(f => f.time == time) match {
     case Some(f) => f
@@ -240,15 +259,16 @@ case class Animation(timeline: Timeline) {
   var isPlaying = false
   def fps = 10
   def loop() = {
-    Timer(50, () => if (isPlaying) {
-      if (timeline.nextTime != 0) {
-        timeline.setTime(timeline.nextTime)
-        play()
-      }
-      else {
-        isPlaying = false
-      }
-    })
+    Timer(50,
+          () =>
+            if (isPlaying) {
+              if (timeline.nextTime != 0) {
+                timeline.setTime(timeline.nextTime)
+                play()
+              } else {
+                isPlaying = false
+              }
+          })
   }
   def play(): Unit = {
     isPlaying = true
@@ -280,4 +300,3 @@ class WindowController(animation: Animation) {
   }
   dom.window.addEventListener[dom.raw.KeyboardEvent]("keydown", keypress _)
 }
-

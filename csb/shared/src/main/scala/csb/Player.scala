@@ -35,7 +35,6 @@ case class Config(val p: Map[String,Int]) {
 
   def randomize: Config = {
     val n = p.mapValues(e => java.lang.Math.round(e + Random.nextGaussian() * e * 0.1).toInt)
-    Print(n)
     Config(n)
   }
 }
@@ -96,7 +95,7 @@ trait SimplePlayer extends Player with PilotConstructor {
   }
 }
 
-class MetaPlayer(val config: Config) extends SimplePlayer {
+case class MetaPlayer(val config: Config) extends SimplePlayer {
   def pilot(pod: Pod, race: Race): Pilot = {
     MetaPilot(pod, race)(config)
   }

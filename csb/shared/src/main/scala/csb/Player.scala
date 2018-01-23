@@ -10,7 +10,7 @@ case class Config(val p: Map[String,Int]) {
   val reactionDistanceCorrected = p("reactionDistanceCorrected")
   val speedFactorNumCorrected = p("speedFactorNumCorrected")
   val speedFactorDenumCorrected = if (p("speedFactorDenumCorrected") == 0) 1 else p("speedFactorDenumCorrected")
-  val speedFactorCorrected: Double = speedFactorNumCorrected.toDouble / speedFactorDenumCorrected 
+  val speedFactorCorrected: Double = speedFactorNumCorrected.toDouble / speedFactorDenumCorrected
   val minSpeedOffsetCorrected = p("minSpeedOffsetCorrected")
   val longDistanceBoost = p("longDistanceBoost")
   val smallAngleBoost = p("smallAngleBoost")
@@ -39,38 +39,69 @@ case class Config(val p: Map[String,Int]) {
   }
 }
 
-object DefaultConfig extends Config(Map( 
-    "maxSpeed" -> 200,
-    "maxSpeedCorrected" -> 200,
-    "minSpeedCorrected" -> 60,
-    "maxAngleCorrected" -> 18,
-    "minAngleCorrected" -> 90,
-    "reactionDistanceCorrected" -> 5000,
-    "speedFactorNumCorrected" -> 10,
-    "speedFactorDenumCorrected" -> 20,
-    "minSpeedOffsetCorrected" -> 150,
-    "longDistanceBoost" -> 4000, 
-    "smallAngleBoost" -> 30,
-    "skipAngle" -> 30,
-    "skipDistance" -> 2000,
-    "skipSpeed" -> 350,
-    "choosePilot1Distance" -> 5000,
-    "speedPilotHit" -> 200,
-    "smallDistancePilotWait" -> 2500,
-    "maxSpeedPilotWait" -> 200,
-    "anglePilotAvoid" -> 90,
-    "maxSpeedPilotAvoid" -> 200,
-    "largeDistancePilotFight" -> 3000,
-    "skipAnglePilot2" -> 30,
-    "skipSpeedPilot2" -> 250,
-    "stepsToDestinationPilot2" -> 4,
-    "maxSpeedPilot2" -> 200,
-    "ratioPilot1" -> 2,
-    "angleDenumPilot1" -> 4,
-    "maxSpeedPilot1" -> 200,
-    "maxSpeedPilot0" -> 200
-  ))
+object DefaultConfig extends Config(Map(
+  "angleDenumPilot1" -> 4,
+  "anglePilotAvoid" -> 90,
+  "choosePilot1Distance" -> 5000,
+  "largeDistancePilotFight" -> 3000,
+  "longDistanceBoost" -> 4000,
+  "maxAngleCorrected" -> 18,
+  "maxSpeed" -> 200,
+  "maxSpeedCorrected" -> 200,
+  "maxSpeedPilot0" -> 200,
+  "maxSpeedPilot1" -> 200,
+  "maxSpeedPilot2" -> 200,
+  "maxSpeedPilotAvoid" -> 200,
+  "maxSpeedPilotWait" -> 200,
+  "minAngleCorrected" -> 90,
+  "minSpeedCorrected" -> 60,
+  "minSpeedOffsetCorrected" -> 150,
+  "ratioPilot1" -> 2,
+  "reactionDistanceCorrected" -> 5000,
+  "skipAngle" -> 30,
+  "skipAnglePilot2" -> 30,
+  "skipDistance" -> 2000,
+  "skipSpeed" -> 350,
+  "skipSpeedPilot2" -> 250,
+  "smallAngleBoost" -> 30,
+  "smallDistancePilotWait" -> 2500,
+  "speedFactorDenumCorrected" -> 20,
+  "speedFactorNumCorrected" -> 10,
+  "speedPilotHit" -> 200,
+  "stepsToDestinationPilot2" -> 4
+))
 
+object BetterConfig extends Config(Map(
+  "angleDenumPilot1" -> 4,
+  "anglePilotAvoid" -> 120,
+  "choosePilot1Distance" -> 4175,
+  "largeDistancePilotFight" -> 3358,
+  "longDistanceBoost" -> 3156,
+  "maxAngleCorrected" -> 13,
+  "maxSpeed" -> 148,
+  "maxSpeedCorrected" -> 200,
+  "maxSpeedPilot0" -> 162,
+  "maxSpeedPilot1" -> 270,
+  "maxSpeedPilot2" -> 241,
+  "maxSpeedPilotAvoid" -> 185,
+  "maxSpeedPilotWait" -> 222,
+  "minAngleCorrected" -> 75,
+  "minSpeedCorrected" -> 62,
+  "minSpeedOffsetCorrected" -> 106,
+  "ratioPilot1" -> 2,
+  "reactionDistanceCorrected" -> 4266,
+  "skipAngle" -> 44,
+  "skipAnglePilot2" -> 21,
+  "skipDistance" -> 1913,
+  "skipSpeed" -> 327,
+  "skipSpeedPilot2" -> 300,
+  "smallAngleBoost" -> 37,
+  "smallDistancePilotWait" -> 2254,
+  "speedFactorDenumCorrected" -> 26,
+  "speedFactorNumCorrected" -> 7,
+  "speedPilotHit" -> 167,
+  "stepsToDestinationPilot2" -> 4
+))
 
 trait Configurable {
   implicit val config = DefaultConfig

@@ -212,7 +212,9 @@ object Race {
 }
 
 
-case class PodUpdate(position: Point, destination: Point, orientation: Point, speed: Point) 
+case class PodUpdate(position: Point, destination: Point, orientation: Point, speed: Point) {
+  def pod: Pod = Pod(position, List(destination), orientation, speed, false)
+}
 
 case class Record(pod: Pod, command: Option[Command]) {
   override def toString = s"Record($pod, $command)"
@@ -241,9 +243,9 @@ case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Reco
     def stepCommands(i: Int): List[Option[Command]] = steps(i).map(_.command).toList
 }
 
-object PodUpdate {
-  def apply(checkpoints: List[Point]): PodUpdate = {
-      val Array(x, y, vx, vy, angle, index) = for (i ← Input() split " ") yield i.toInt
+case class PodUpdater(checkpoints: List[Point]) {
+  def parsePodUpdate(line: String): PodUpdate = {
+      val Array(x, y, vx, vy, angle, index) = for (i ← line split " ") yield i.toInt
       // reverse Y coordinate as the input are non cartesian
       val position = Point(x, -y)
       val destination = checkpoints(index)

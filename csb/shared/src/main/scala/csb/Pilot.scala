@@ -3,6 +3,16 @@ package csb
 import math.{ abs, min, max, sin, Pi }
 
 case class Command(direction: Point, thrust: Double, label: String) {
+  def this(args: Array[String]) {
+    this(Point(args(0).toDouble, args(1).toDouble),
+      if (args(2) == "BOOST") Pilot.boost
+      else if (args(2) == "SHIELD") Pilot.shield
+      else args(2).toDouble, args(3))
+  }
+  def this(line: String) {
+    this(line.split(" ", 4))
+  }
+
   def answer: String = {
     val t = thrust.round.toInt
     val s = if (t == Pilot.boost) "BOOST"

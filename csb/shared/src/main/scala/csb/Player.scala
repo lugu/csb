@@ -149,9 +149,10 @@ object Player extends App {
   }).toList
 
   val destinations = (for (i ← 1 to checkpointNb) yield checkpoints.tail :+ checkpoints.head).flatten.toList
+  val updater = PodUpdater(checkpoints)
 
   var pods: List[Pod] = (for (i ← 1 to 4) yield {
-    val u = PodUpdate(checkpoints)
+    val u = updater.parsePodUpdate(Input())
     Pod(u.position, destinations, u.orientation, u.speed, true)
   }).toList
 
@@ -169,7 +170,7 @@ object Player extends App {
 
     if (! race.isFinished) {
       commands.foreach(c => Output(c.answer))
-      pods = for (p ← pods) yield { p.updateWith(PodUpdate(checkpoints)) }
+      pods = for (p ← pods) yield { p.updateWith(updater.parsePodUpdate(Input())) }
       race = Race(pods, checkpoints, laps)
     }
   }
@@ -199,11 +200,13 @@ object IO {
 
   def println(out: String) = {
     record += out + "\n"
+    Print(out)
     scala.Console.println(out)
   }
 
   def readLine(): String = {
     val line = scala.io.StdIn.readLine()
+    Print(line)
     record += line
     line
   }

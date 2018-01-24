@@ -19,7 +19,8 @@
 
 ## Generate target/Player.scala for the online competition:
 
-    sbt "csbJVM/run-main csb.bundle.BundlerMain csb/shared/src/main/scala/csb/player/Player.scala"
+    sbt "csbJVM/run-main csb.bundle.BundlerMain csb/shared/src/main/scala/csb/Player.scala"
+    sbt scalafmt
 
 # Project
 
@@ -28,10 +29,10 @@
     - can display a race in the browser
 
 ## TODO
-    - fix meta pilot double lock
-    - improve the parameters
-    - visualize the races
-
+    - bundle: fix csb namespace
+    - simulation: handle collision
+    - simulation: handle boost
+    - simulation: handle defense
 
 # Resources
 

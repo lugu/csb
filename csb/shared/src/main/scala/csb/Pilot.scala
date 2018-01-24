@@ -25,7 +25,7 @@ trait Pilot {
   def command = Command(direction, thrust, label)
 }
 
-case class PilotTest(pod: Pod)(implicit val config: Config) extends Pilot {
+case class PilotTest(pod: Pod) extends Pilot {
   def label = "TEST"
   def direction = pod.position + (pod.orientation * 1000) + Point(-100, 0)
   def thrust = 100

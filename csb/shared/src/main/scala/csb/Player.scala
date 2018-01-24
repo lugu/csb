@@ -132,6 +132,12 @@ case class MetaPlayer(val config: Config) extends SimplePlayer {
   }
 }
 
+case class TestPlayer(val config: Config) extends SimplePlayer {
+  def pilot(pod: Pod, race: Race): Pilot = {
+    PilotTest(pod)
+  }
+}
+
 object Player extends App {
 
   val Array(laps) = for (i ← Input() split " ") yield i.toInt

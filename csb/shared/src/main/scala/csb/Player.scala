@@ -137,42 +137,6 @@ case class TestPlayer(val config: Config) extends SimplePlayer {
     PilotTest(pod)
   }
 }
-
-object Player extends App {
-
-  val Array(laps) = for (i ← Input() split " ") yield i.toInt
-  val Array(checkpointNb) = for (i ← Input() split " ") yield i.toInt
-  val checkpoints: List[Point] = (for (i ← 1 to checkpointNb) yield {
-    val Array(checkpointX, checkpointY) = for (i ← Input() split " ") yield i.toInt
-    // reverse Y coordinate as the input are non cartesian
-    Point(checkpointX, -checkpointY)
-  }).toList
-
-  val destinations = (for (i ← 1 to checkpointNb) yield checkpoints.tail :+ checkpoints.head).flatten.toList
-  val updater = PodUpdater(checkpoints)
-
-  var pods: List[Pod] = (for (i ← 1 to 4) yield {
-    val u = updater.parsePodUpdate(Input())
-    Pod(u.position, destinations, u.orientation, u.speed, true)
-  }).toList
-
-  var race = Race(pods, checkpoints, laps)
-
-  var recorder = RaceRecord(laps, checkpoints, List())
-
-  val player = new MetaPlayer(DefaultConfig)
-
-  while (!race.isFinished) {
-    val commands = player.commands(race)
-
-    recorder = recorder.updateWith(race, List(Some(commands(0)), Some(commands(1)), None, None))
-    // IO.dump()
-
-    if (! race.isFinished) {
-      commands.foreach(c => Output(c.answer))
-      pods = for (p ← pods) yield { p.updateWith(updater.parsePodUpdate(Input())) }
-      race = Race(pods, checkpoints, laps)
-    }
   }
 }
 

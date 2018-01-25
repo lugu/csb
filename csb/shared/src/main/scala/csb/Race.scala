@@ -117,6 +117,7 @@ case class Race (
     val laps:        Int) {
 
   def this(checkpoints: List[Point], laps: Int) = this(Race.initPods(checkpoints, 3), checkpoints, 3)
+  def newRecorder = RaceRecord(laps, checkpoints, List())
 
   def pod0 = pods(0)
   def pod1 = pods(1)
@@ -200,6 +201,24 @@ case class Race (
 }
 
 object Race {
+
+  def parseInput(input: () => String): Race = {
+    val laps = input().toInt
+    val checkpointsNb = input().toInt
+    val checkpoints = for (i <- (1 to checkpointsNb)) yield {
+      val Array(checkpointX, checkpointY) = for (i ← input() split " ") yield i.toInt
+      Point(checkpointX, -checkpointY)
+    }
+    val destinations = (for (i ← 1 to checkpointsNb)
+      yield checkpoints.tail :+ checkpoints.head).flatten.toList
+    val updater = PodUpdater(checkpoints.toList)
+    var pods: List[Pod] = (for (i ← 1 to 4) yield {
+      val u = updater.parsePodUpdate(input())
+      Pod(u.position, destinations, u.orientation, u.speed, true)
+    }).toList
+
+    Race(pods, checkpoints.toList, laps)
+  }
 
   def initPods(checkpoints: List[Point], laps: Int): List[Pod] = {
     val checkpointsShift = checkpoints.tail :+ checkpoints.head

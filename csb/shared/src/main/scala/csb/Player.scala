@@ -132,12 +132,29 @@ case class MetaPlayer(val config: Config) extends SimplePlayer {
   }
 }
 
+case class RepeatPlayer(val player: Player, val output: (String) => Unit) extends Player {
+  def commands(race: Race): List[Command] = {
+    val c = player.commands(race)
+    c.foreach(a => output(a.answer))
+    c
+  }
+}
+
 case class TestPlayer(var step: Int) extends Player {
   def commands(race: Race): List[Command] = {
     step += 1
     if (step < 100) List(Command(Point(0, 100), 10, "before 1"), Command(Point(1000, 100), 10, "before 2")) 
     else List(Command(race.pod1.position, 100, "boom 1"), Command(Point(1000, 100), 10, "waiting 2")) 
   }
+}
+
+case class ReplayPlayer(input: () => String) extends Player {
+  def commands(race: Race): List[Command] = List(new Command(input()), new Command(input()))
+}
+
+case class DummyPlayer() extends Player {
+  def command(pos: Point) = Command(pos, 0, "dummy")
+  def commands(race: Race): List[Command] = List(command(race.pod0.position), command(race.pod1.position))
 }
 
 object Print {
@@ -149,6 +166,33 @@ object Print {
     printer(messages.mkString(" "))
   }
 }
+
+trait Judge {
+  def judge(race: Race, commands: List[Command]): Race
+}
+
+case class JudgeReplay(input: () => String) extends Judge {
+  def judge(race: Race, commands: List[Command]) = {
+    if (race.isFinished) race
+    else {
+      val updater = PodUpdater(race.checkpoints)
+      val pods = for (p ← race.pods) yield {
+        p.updateWith(updater.parsePodUpdate(Input()))
+      }
+      Race(pods, race.checkpoints, race.laps)
+    }
+  }
+}
+
+case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge) {
+  def nextTurn: Game = {
+    val commands = playerA.commands(race) ::: playerB.commands(race.inverted)
+    Game(judge.judge(race, commands), playerA, playerB, judge)
+  }
+  @scala.annotation.tailrec
+  final def play: Game = if (race.isFinished) this else nextTurn.play
+}
+
 
 object Input {
   def apply(): String = IO.readLine()

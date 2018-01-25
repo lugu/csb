@@ -1,20 +1,9 @@
-import csb.{Race,RaceRecord,MetaPlayer,TestPlayer,IO,Input,Output,PodUpdater}
+import csb.{Race,RaceRecord,RepeatPlayer,DefaultConfig,JudgeReplay,DummyPlayer,MetaPlayer,TestPlayer,IO,Input,Output,PodUpdater,Game}
 
 object Player extends App {
-  var race = Race.parseInput(Input.apply)
-  val updater = PodUpdater(race.checkpoints)
-  var recorder = race.newRecorder
-  val player = new MetaPlayer(DefaultConfig)
-  while (!race.isFinished) {
-    val commands = player.commands(race)
-    recorder = recorder.updateWith( race, List(Some(commands(0)), Some(commands(1)), None, None))
-    // IO.dump()
-    if (!race.isFinished) {
-      commands.foreach(c => Output(c.answer))
-      val pods = for (p ← race.pods) yield {
-        p.updateWith(updater.parsePodUpdate(Input()))
-      }
-      race = Race(pods, race.checkpoints, race.laps)
-    }
-  }
+  val race = Race.parseInput(Input.apply)
+  val player = RepeatPlayer(new MetaPlayer(DefaultConfig), Output.apply)
+  var game = Game(race, player, DummyPlayer(), JudgeReplay(Input.apply))
+  game.play
 }
+

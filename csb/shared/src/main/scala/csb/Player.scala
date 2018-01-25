@@ -132,11 +132,11 @@ case class MetaPlayer(val config: Config) extends SimplePlayer {
   }
 }
 
-case class TestPlayer(val config: Config) extends SimplePlayer {
-  def pilot(pod: Pod, race: Race): Pilot = {
-    PilotTest(pod)
-  }
-}
+case class TestPlayer(var step: Int) extends Player {
+  def commands(race: Race): List[Command] = {
+    step += 1
+    if (step < 100) List(Command(Point(0, 100), 10, "before 1"), Command(Point(1000, 100), 10, "before 2")) 
+    else List(Command(race.pod1.position, 100, "boom 1"), Command(Point(1000, 100), 10, "waiting 2")) 
   }
 }
 

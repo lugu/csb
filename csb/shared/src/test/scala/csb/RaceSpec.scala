@@ -43,8 +43,11 @@ class RaceSpec extends FlatSpec with Matchers {
   }
 
   "Judge" should "be able to resolve collision 1" in {
-    Source.fromResource("collision-1.txt").getLines
-    Source.fromResource("collision-1-output.txt")
+    // val race = Race.parseInput(Source.fromResource("collision-1.txt").getLines.toStream)
+    // val playerA = RepeatPlayer(Source.fromResource("collision-1-output.txt").getLines.toStream)
+    // val playerB = DummyPlayer()
+    // val judge = JudgeReplay(Source.fromResource("collision-1.txt").getLines.toStream.drop(???))
+    // val Game(race, plasyerA, playerB,
   }
 
   "Judge" should "be able to resolve collision 2" in {

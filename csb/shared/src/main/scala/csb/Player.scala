@@ -171,14 +171,16 @@ trait Judge {
   def judge(race: Race, commands: List[Command]): Race
 }
 
-case class JudgeReplay(input: () => String) extends Judge {
+case class JudgeReplay(var input : Stream[String]) extends Judge {
   def judge(race: Race, commands: List[Command]) = {
     if (race.isFinished) race
     else {
       val updater = PodUpdater(race.checkpoints)
-      val pods = for (p ← race.pods) yield {
-        p.updateWith(updater.parsePodUpdate(Input()))
-      }
+      val pods = input.take(4).zip(race.pods).map {
+        case (line: String, pod: Pod) =>
+          pod.updateWith(updater.parsePodUpdate(line))
+      }.toList
+      input = input.drop(4)
       Race(pods, race.checkpoints, race.laps)
     }
   }
@@ -195,7 +197,7 @@ case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge) {
 
 
 object Input {
-  def apply(): String = IO.readLine()
+  def stream: Stream[String] = Stream.cons(IO.readLine(), stream)
 }
 
 object Output {

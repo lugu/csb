@@ -202,22 +202,28 @@ case class Race (
 
 object Race {
 
-  def parseInput(input: () => String): Race = {
-    val laps = input().toInt
-    val checkpointsNb = input().toInt
-    val checkpoints = for (i <- (1 to checkpointsNb)) yield {
-      val Array(checkpointX, checkpointY) = for (i ← input() split " ") yield i.toInt
-      Point(checkpointX, -checkpointY)
+  def parseInput(input: Stream[String]): Race = {
+    def parsePods(checkpoints: List[Point], input: Stream[String]): List[Pod] = {
+      val updater = PodUpdater(checkpoints)
+      val destinations = (for (i ← 1 to checkpoints.size)
+        yield checkpoints.tail :+ checkpoints.head).flatten.toList
+      input.take(4).map{
+        (line: String) => {
+          val u = updater.parsePodUpdate(line)
+          Pod(u.position, destinations, u.orientation, u.speed, true)
+        }
+      }.toList
     }
-    val destinations = (for (i ← 1 to checkpointsNb)
-      yield checkpoints.tail :+ checkpoints.head).flatten.toList
-    val updater = PodUpdater(checkpoints.toList)
-    var pods: List[Pod] = (for (i ← 1 to 4) yield {
-      val u = updater.parsePodUpdate(input())
-      Pod(u.position, destinations, u.orientation, u.speed, true)
-    }).toList
-
-    Race(pods, checkpoints.toList, laps)
+    val laps = input.head.toInt
+    val checkpointsNb = input.tail.head.toInt
+    val checkpoints = input.tail.tail.take(checkpointsNb).map{
+      (line: String) => {
+        val Array(checkpointX, checkpointY) = line.split(" ").map(_.toInt)
+        Point(checkpointX, -checkpointY)
+      }
+    }.toList
+    val pods = parsePods(checkpoints, input.drop(2 + checkpointsNb))
+    Race(pods, checkpoints, laps)
   }
 
   def initPods(checkpoints: List[Point], laps: Int): List[Pod] = {

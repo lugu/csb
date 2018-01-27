@@ -10,8 +10,8 @@ object Screen {
   def height = 484
 }
 
-// Board holds the content to be display
-object Board {
+// Window holds the content to be display
+object Window {
   def width = 16000
   def height = 9000
   def canvas = document.getElementById("canvas").asInstanceOf[html.Canvas]
@@ -35,14 +35,14 @@ object Board {
 
 object Pixel {
   def fromPoint(p: Point): Pixel =
-    Pixel((p.x / Board.width * Screen.width).toInt,
-          (-p.y / Board.height * Screen.height).toInt)
+    Pixel((p.x / Window.width * Screen.width).toInt,
+          (-p.y / Window.height * Screen.height).toInt)
 }
 
-// Pixel is the coordinate system for the Board
+// Pixel is the coordinate system for the Window
 case class Pixel(x: Int, y: Int) {
   def toPoint =
-    Point(x * Board.width / Screen.width, -y * Board.width / Screen.width)
+    Point(x * Window.width / Screen.width, -y * Window.width / Screen.width)
 }
 
 object Logger {
@@ -65,13 +65,13 @@ class Logger {
   }
 }
 
-case class GameState(race: Race, recorder: RaceRecord, currentStep: Int)
+case class BoardState(race: Race, recorder: RaceRecord, currentStep: Int)
 
-// Game connect the simulation with the board
-class Game(var state: GameState) {
+// Board connect the simulation with the board
+class Board(var state: BoardState) {
 
   def this(race: Race, recorder: RaceRecord, currentStep: Int) {
-    this(GameState(race, recorder, currentStep))
+    this(BoardState(race, recorder, currentStep))
   }
   def this(race: Race) {
     this(race, RaceRecord(race.laps, race.checkpoints, List()), 0)
@@ -103,11 +103,11 @@ class Game(var state: GameState) {
   val animation = new Animation(FrameTimeline(frames))
   val controller = new WindowController(animation)
 
-  def podActors = race.pods.zip(Board.sprites).map {
+  def podActors = race.pods.zip(Window.sprites).map {
     case (pod, sprite) => PodActor(pod, sprite)
   }
   def logActors =
-    loggers.zip(Board.terminals).map { case (l, t) => LogActor(l.flush, t) }
+    loggers.zip(Window.terminals).map { case (l, t) => LogActor(l.flush, t) }
   def actors = logActors ::: podActors
 
   def commands = {
@@ -131,7 +131,7 @@ class Game(var state: GameState) {
     val newRace = race.simulate(commands)
     val newRecorder = recorder.updateWith(newRace, commands.map(c => Some(c)))
     if (isFinished) recorder.dump()
-    state = GameState(newRace, newRecorder, newcurrentStep)
+    state = BoardState(newRace, newRecorder, newcurrentStep)
   }
 
   def frames: Stream[Frame] = {
@@ -150,10 +150,10 @@ class Game(var state: GameState) {
   def run() = animation.play()
 }
 
-object Game {
-  @JSExportTopLevel("csb.Game.main")
+object Board {
+  @JSExportTopLevel("csb.Board.main")
   def main(canvas: html.Canvas): Unit = {
-    val game = new Game()
+    val game = new Board()
     game.run()
   }
 }
@@ -207,7 +207,7 @@ case class PodActor(pod: Pod, sprite: Sprite) extends Actor {
 
 case class Frame(time: Int, actors: Seq[Actor]) {
   def plot = {
-    Board.clear()
+    Window.clear()
     actors.foreach(_.plot)
   }
 }

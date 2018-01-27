@@ -177,6 +177,10 @@ trait Judge {
   def isFinished(game: Game): Boolean = if (game.step > 3000) true else game.race.isFinished
 }
 
+case class JudgeSimulation() extends Judge {
+  def judge(race: Race, commands: List[Command]) = race.simulate(commands)
+}
+
 case class JudgeReplay(var input: Stream[String]) extends Judge {
   override def isFinished(game: Game): Boolean = input.isEmpty
   def judge(race: Race, commands: List[Command]): Race = input.headOption match {
@@ -216,6 +220,7 @@ case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step
     this(race, playerA, playerB, judge, 0)
   }
   def winner(game: Game): Option[Pod] = game.race.winner
+  def isFinished = judge.isFinished(this)
   def nextTurn: Game = {
     val isFinished = judge.isFinished(this)
     Print(s"isFinished $isFinished")

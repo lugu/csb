@@ -65,37 +65,20 @@ class Logger {
   }
 }
 
-case class BoardState(race: Race, recorder: RaceRecord, currentStep: Int)
-
 // Board connect the simulation with the board
-class Board(var state: BoardState) {
+class Board(var game: Game, var recorder: RaceRecord) {
 
-  def this(race: Race, recorder: RaceRecord, currentStep: Int) {
-    this(BoardState(race, recorder, currentStep))
-  }
-  def this(race: Race) {
-    this(race, RaceRecord(race.laps, race.checkpoints, List()), 0)
-  }
-  def this(checkpoints: List[Point], laps: Int) {
-    this(new Race(checkpoints, laps))
-  }
-  def this() {
-    this(
-      List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390))
-        .map { p =>
-          p.toPoint
-        },
-      3)
+  def this(game: Game) {
+    this(game, game.race.newRecorder)
   }
 
-  def currentStep = state.currentStep
-  def recorder = state.recorder
-  def race = state.race
+  def step = game.step
+  def race = game.race
 
   val loggers = List(new Logger(), new Logger(), Logger.default)
 
-  val playerA = new MetaPlayer(DefaultConfig)
-  val playerB = new MetaPlayer(BetterConfig)
+  val playerA = game.playerA
+  val playerB = game.playerB
 
   def loggerA = loggers(0)
   def loggerB = loggers(1)
@@ -122,39 +105,48 @@ class Board(var state: BoardState) {
     cmds
   }
 
-  def isFinished: Boolean = if (currentStep > 3000) true else race.isFinished
+  def isFinished: Boolean = game.isFinished
 
-  def step() = {
-
-    val newcurrentStep = currentStep + 1
-    Print("race step: " + currentStep)
-    val newRace = race.simulate(commands)
-    val newRecorder = recorder.updateWith(newRace, commands.map(c => Some(c)))
+  def nextTurn() = {
+    Print("race step: " + step)
+    val playerCommands = commands
+    game = game.nextTurn
+    recorder = recorder.updateWith(game.race, playerCommands.map(c => Some(c)))
     if (isFinished) recorder.dump()
-    state = BoardState(newRace, newRecorder, newcurrentStep)
   }
 
   def frames: Stream[Frame] = {
-    if (currentStep == 0) {
-      val head = Frame(currentStep, actors)
-      step()
-      if (!isFinished) head #:: Frame(currentStep, actors) #:: frames
-      else head #:: Frame(currentStep, actors) #:: Stream.empty
+    if (step == 0) {
+      val head = Frame(step, actors)
+      nextTurn()
+      if (!isFinished) head #:: Frame(step, actors) #:: frames
+      else head #:: Frame(step, actors) #:: Stream.empty
     } else {
-      step()
-      if (!isFinished) Frame(currentStep, actors) #:: frames
-      else Frame(currentStep, actors) #:: Stream.empty
+      nextTurn()
+      if (!isFinished) Frame(step, actors) #:: frames
+      else Frame(step, actors) #:: Stream.empty
     }
   }
 
-  def run() = animation.play()
+  def play() = animation.play()
 }
 
 object Board {
   @JSExportTopLevel("csb.Board.main")
   def main(canvas: html.Canvas): Unit = {
-    val game = new Board()
-    game.run()
+
+    val playerA = new MetaPlayer(DefaultConfig)
+    val playerB = new MetaPlayer(BetterConfig)
+
+    val laps = 3
+    val checkpoints = List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
+    val race = new Race(checkpoints, laps)
+
+    val judge = JudgeSimulation()
+    val game = Game(race, playerA, playerB, judge, 0)
+
+    val board = new Board(game)
+    board.play()
   }
 }
 

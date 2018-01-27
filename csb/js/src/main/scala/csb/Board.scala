@@ -139,7 +139,11 @@ object Board {
     val playerB = new MetaPlayer(BetterConfig)
 
     val laps = 3
-    val checkpoints = List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390)).map { p => p.toPoint }
+    val checkpoints =
+      List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390))
+        .map { p =>
+          p.toPoint
+        }
     val race = new Race(checkpoints, laps)
 
     val judge = JudgeSimulation()

@@ -178,6 +178,7 @@ trait Judge {
 }
 
 case class JudgeSimulation() extends Judge {
+  override def isFinished(game: Game): Boolean = if (game.step > 1000) true else game.race.isFinished
   def judge(race: Race, commands: List[Command]) = race.simulate(commands)
 }
 
@@ -223,8 +224,6 @@ case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step
   def isFinished = judge.isFinished(this)
   def nextTurn: Game = {
     val isFinished = judge.isFinished(this)
-    Print(s"isFinished $isFinished")
-    Print(s"step $step")
     val commands = playerA.commands(race) ::: playerB.commands(race.inverted)
     Game(judge.judge(race, commands), playerA, playerB, judge, step + 1)
   }

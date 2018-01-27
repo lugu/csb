@@ -1,10 +1,22 @@
 package csb
 
-object Simulation extends App {
-  def defaultCheckpoints = List(Point(5655,-2567), Point(4093,-7460), Point(13488,-2344), Point(12948,-7255))
-  def testRace: Race = new Race(defaultCheckpoints, 3)
+object RunSimulation extends App {
+  Simulation.run()
+}
 
-  override def main(args: Array[String]) {
+object Simulation {
+
+  def fitness(player: Player): Int = {
+    def checkpoints = List(Point(5655,-2567), Point(4093,-7460), Point(13488,-2344), Point(12948,-7255))
+    def laps = 3
+    def judge = JudgeSimulation()
+    def race: Race = new Race(checkpoints, laps)
+    def game(player: Player): Game = Game(race, player, player, judge, 0)
+
+    game(player).play.step
+  }
+
+  def run() {
     println("Default fitness: " + defaultIndividual.fitness)
     println("Starting simulation.")
     val leader = population(100).generation(3, 100).leader
@@ -14,7 +26,7 @@ object Simulation extends App {
 
   case class Individual(config: Config, fitness: Int) {
     def this(config: Config, player: Player) {
-      this(config, Simulation(testRace, 0, player, player).run().step)
+      this(config, fitness(player))
     }
     def this(config: Config) {
       this(config, MetaPlayer(config))
@@ -49,17 +61,4 @@ object Simulation extends App {
     val individuals = for (i <- 1 to (size - 1)) yield newIndividual
     Population(defaultIndividual +: individuals)
   }
-}
-
-case class Simulation(val race: Race, val step: Int, playerA: Player, playerB: Player) {
-
-  def commands = playerA.commands(race) ::: playerB.commands(race.inverted)
-  def isFinished: Boolean = if (step >= 1000) true else race.isFinished
-
-  def next: Simulation = {
-    Simulation(race.simulate(commands), step + 1, playerA, playerB)
-  }
-
-  @scala.annotation.tailrec
-  final def run(): Simulation = if (isFinished) this else next.run()
 }

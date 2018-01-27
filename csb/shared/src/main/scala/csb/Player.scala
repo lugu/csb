@@ -223,6 +223,7 @@ case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step
   def winner(game: Game): Option[Pod] = game.race.winner
   def isFinished = judge.isFinished(this)
   def nextTurn: Game = {
+    IO.debug()
     val isFinished = judge.isFinished(this)
     val commands = playerA.commands(race) ::: playerB.commands(race.inverted)
     Game(judge.judge(race, commands), playerA, playerB, judge, step + 1)
@@ -244,14 +245,17 @@ object IO {
 
   var record = ""
 
+  val verbose = false
+  def debug() = if (verbose) record.split("\n").foreach(s => Print(s))
+
   def println(out: String) = {
-    record += out + "\n"
+    record += out.split("\n").map(s => s"out: $s").mkString("\n") + "\n"
     scala.Console.println(out)
   }
 
   def readLine(): String = {
     val line = scala.io.StdIn.readLine()
-    record += line
+    record += s"in: $line\n"
     line
   }
 

@@ -30,10 +30,8 @@
     - can display a race in the browser
 
 ## TODO
-    - bundle: fix csb namespace
+    - replay online race in the browser
     - simulation: handle collision
-    - simulation: handle boost
-    - simulation: handle defense
 
 # Resources
 

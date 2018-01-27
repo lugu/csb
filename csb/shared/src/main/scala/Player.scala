@@ -1,9 +1,14 @@
-import csb.{Race,RaceRecord,RepeatPlayer,DefaultConfig,JudgeReplay,DummyPlayer,MetaPlayer,TestPlayer,IO,Input,Output,PodUpdater,Game}
+import csb.{Race,RepeatPlayer,DefaultConfig,JudgeRepeat,DummyPlayer,MetaPlayer,Input,Output,Game,Print}
 
 object Player extends App {
   val race = Race.parseInput(Input.stream)
-  val player = RepeatPlayer(new MetaPlayer(DefaultConfig), Output.apply)
-  var game = Game(race, player, DummyPlayer(), JudgeReplay(Input.stream))
-  game.play
-}
+  val playerA = RepeatPlayer(MetaPlayer(DefaultConfig), Output.apply)
+  val playerB = DummyPlayer()
+  val judge = JudgeRepeat(() => { Input.stream })
+  val game = Game(race, playerA, playerB, judge, 0).play
 
+  game.race.winner match {
+    case Some(pod) => Print("winner is: " + pod.toString)
+    case None => Print("no winner")
+  }
+}

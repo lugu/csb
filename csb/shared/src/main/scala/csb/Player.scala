@@ -143,13 +143,18 @@ case class RepeatPlayer(val player: Player, val output: (String) => Unit) extend
 case class TestPlayer(var step: Int) extends Player {
   def commands(race: Race): List[Command] = {
     step += 1
-    if (step < 100) List(Command(Point(0, 100), 10, "before 1"), Command(Point(1000, 100), 10, "before 2")) 
-    else List(Command(race.pod1.position, 100, "boom 1"), Command(Point(1000, 100), 10, "waiting 2")) 
+    if (step < 100) List(Command(Point(0, 100), 10, "before 1"), Command(Point(1000, 100), 10, "before 2"))
+    else List(Command(race.pod1.position, 100, "boom 1"), Command(Point(1000, 100), 10, "waiting 2"))
   }
 }
 
-case class ReplayPlayer(input: () => String) extends Player {
-  def commands(race: Race): List[Command] = List(new Command(input()), new Command(input()))
+case class ReplayPlayer(var input: Stream[String]) extends Player {
+  def command = {
+    val c = new Command(input.head)
+    input = input.tail
+    c
+  }
+  def commands(race: Race): List[Command] = List(command, command)
 }
 
 case class DummyPlayer() extends Player {
@@ -169,35 +174,62 @@ object Print {
 
 trait Judge {
   def judge(race: Race, commands: List[Command]): Race
+  def isFinished(game: Game): Boolean = if (game.step > 3000) true else game.race.isFinished
 }
 
-case class JudgeReplay(var input : Stream[String]) extends Judge {
-  def judge(race: Race, commands: List[Command]) = {
-    if (race.isFinished) race
-    else {
+case class JudgeReplay(var input: Stream[String]) extends Judge {
+  override def isFinished(game: Game): Boolean = input.isEmpty
+  def judge(race: Race, commands: List[Command]): Race = input.headOption match {
+    case None => race
+    case _ => {
       val updater = PodUpdater(race.checkpoints)
-      val pods = input.take(4).zip(race.pods).map {
-        case (line: String, pod: Pod) =>
-          pod.updateWith(updater.parsePodUpdate(line))
-      }.toList
+      val pods = input
+        .take(4)
+        .zip(race.pods)
+        .map {
+          case (line: String, pod: Pod) =>
+            pod.updateWith(updater.parsePodUpdate(line))
+        }.toList
       input = input.drop(4)
       Race(pods, race.checkpoints, race.laps)
     }
   }
 }
 
-case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge) {
+case class JudgeRepeat(val input: () => Stream[String]) extends Judge {
+  def judge(race: Race, commands: List[Command]) = {
+    val updater = PodUpdater(race.checkpoints)
+    val pods = input()
+      .take(4)
+      .zip(race.pods)
+      .map {
+        case (line: String, pod: Pod) =>
+          pod.updateWith(updater.parsePodUpdate(line))
+      }
+        .toList
+        Race(pods, race.checkpoints, race.laps)
+  }
+}
+
+case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step: Int) {
+  def this(race: Race, playerA: Player, playerB: Player, judge: Judge) {
+    this(race, playerA, playerB, judge, 0)
+  }
+  def winner(game: Game): Option[Pod] = game.race.winner
   def nextTurn: Game = {
+    val isFinished = judge.isFinished(this)
+    Print(s"isFinished $isFinished")
+    Print(s"step $step")
     val commands = playerA.commands(race) ::: playerB.commands(race.inverted)
-    Game(judge.judge(race, commands), playerA, playerB, judge)
+    Game(judge.judge(race, commands), playerA, playerB, judge, step + 1)
   }
   @scala.annotation.tailrec
-  final def play: Game = if (race.isFinished) this else nextTurn.play
+  final def play: Game = if (judge.isFinished(this)) this else nextTurn.play
 }
 
 
 object Input {
-  def stream: Stream[String] = Stream.cons(IO.readLine(), stream)
+  def stream: Stream[String] = Stream.continually(IO.readLine())
 }
 
 object Output {
@@ -210,13 +242,11 @@ object IO {
 
   def println(out: String) = {
     record += out + "\n"
-    Print(out)
     scala.Console.println(out)
   }
 
   def readLine(): String = {
     val line = scala.io.StdIn.readLine()
-    Print(line)
     record += line
     line
   }
@@ -232,7 +262,7 @@ object IO {
       count = inflater.inflate(decompressedData)
       finalData = finalData ++ decompressedData.take(count)
     }
-    return finalData 
+    return finalData
   }
 
   def compress(inData: Array[Byte]): Array[Byte] = {

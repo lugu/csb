@@ -119,16 +119,17 @@ case class Race (
   def this(checkpoints: List[Point], laps: Int) = this(Race.initPods(checkpoints, 3), checkpoints, 3)
   def newRecorder = RaceRecord(laps, checkpoints, List())
 
+  def myPods = pods.take(2)
   def pod0 = pods(0)
   def pod1 = pods(1)
 
-  def enemies = pods.slice(2, 4)
+  def enemies = pods.drop(2)
   def enemy0 = pods(2)
   def enemy1 = pods(3)
 
   def friend(me: Pod) = if (me == pod0) pod1 else pod0
 
-  def inverted: Race = Race(pods.slice(2, 4) ::: pods.slice(0, 2), checkpoints, laps)
+  def inverted: Race = Race(pods.drop(2) ::: pods.take(2), checkpoints, laps)
 
   def compareScore(a: Pod, b: Pod) = if (a.score < b.score) a
   else if (a.score > b.score) b
@@ -140,7 +141,9 @@ case class Race (
   def scoreMin = pods.map(_.score).min
   def isFirstTurn = if (scoreMin >= checkpoints.size * (laps - 1)) true else false
   def isLastTurn = if (scoreMin <= checkpoints.size) true else false
-  def isFinished = pods.exists(_.hasFinished)
+
+  def winner: Option[Pod] = pods.find(_.hasFinished)
+  def isFinished = winner.isDefined
 
   def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {
     case (target, index) ⇒ target == p

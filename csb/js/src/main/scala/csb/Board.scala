@@ -20,6 +20,9 @@ object Window {
     .asInstanceOf[dom.CanvasRenderingContext2D]
   def clear() = renderer.clearRect(0, 0, Screen.width, Screen.height)
 
+  def circle(position: Pixel, radius: Int) = {
+  }
+
   def sprite(name: String) =
     Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement],
            renderer)
@@ -79,9 +82,12 @@ class Board(game: Game) {
   def podActors = game.race.pods.zip(Window.sprites).map {
     case (pod, sprite) => PodActor(pod, sprite)
   }
+  def checkpointActors = game.race.checkpoints.zipWithIndex.map {
+    case (p: Point, i: Int) => CheckpointActor(Pixel.fromPoint(p), i.toString)
+  }
   def logActors =
     Board.loggers.zip(Window.terminals).map { case (l, t) => LogActor(l.flush, t) }
-  def actors = logActors ::: podActors
+  def actors = logActors ::: checkpointActors ::: podActors
 
   def nextTurn: Board = new Board(game.nextTurn)
 
@@ -167,6 +173,23 @@ case class Terminal(element: html.Span) {
     message
       .split("\n")
       .foreach(m => element.firstChild.appendChild(li(m).render))
+  }
+}
+
+case class CheckpointActor(pos: Pixel, label: String) extends Actor {
+  def context: dom.CanvasRenderingContext2D = Window.renderer
+  def plot() = {
+    context.beginPath()
+    context.arc(pos.x, pos.y, 35, 0, 2 * Math.PI, false)
+    context.fillStyle = "#000000"
+    context.fill()
+    context.lineWidth = 5
+    context.strokeStyle = "#ffffff"
+    context.stroke()
+    context.font = "20px Arial"
+    context.lineWidth = 2
+    context.strokeStyle = "#ffffff"
+    context.strokeText(label, pos.x - 8, pos.y + 8)
   }
 }
 

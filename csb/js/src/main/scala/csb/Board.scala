@@ -74,61 +74,54 @@ case class PlayerLogger(player: Player, logger: Logger) extends Player {
   }
 }
 
-// Board connect the simulation with the board
-class Board(var game: Game) {
+class Board(game: Game) {
 
-  def step = game.step
-  def race = game.race
+  def podActors = game.race.pods.zip(Window.sprites).map {
+    case (pod, sprite) => PodActor(pod, sprite)
+  }
+  def logActors =
+    Board.loggers.zip(Window.terminals).map { case (l, t) => LogActor(l.flush, t) }
+  def actors = logActors ::: podActors
+
+  def nextTurn: Board = new Board(game.nextTurn)
+
+  def frames: Stream[Frame] = {
+    Print("step :" + game.step)
+    if (game.step == 0) {
+      val head = Frame(game.step, actors)
+      if (!game.isFinished) head #:: Frame(game.step, actors) #:: nextTurn.frames
+      else head #:: Frame(game.step, actors) #:: Stream.empty
+    } else {
+      if (!game.isFinished) Frame(game.step, actors) #:: nextTurn.frames
+      else Frame(game.step, actors) #:: Stream.empty
+    }
+  }
+
+  def play() = {
+    val animation = new Animation(FrameTimeline(frames))
+    val controller = new WindowController(animation)
+    animation.play()
+  }
+}
+
+object Board {
 
   val loggers = List(new Logger(), new Logger(), Logger.default)
-
-  val playerA = game.playerA
-  val playerB = game.playerB
 
   def loggerA = loggers(0)
   def loggerB = loggers(1)
 
-  game = Game(race, PlayerLogger(playerA, loggerA), PlayerLogger(playerB, loggerB), game.judge, game.step)
-
-  val animation = new Animation(FrameTimeline(frames))
-  val controller = new WindowController(animation)
-
-  def podActors = race.pods.zip(Window.sprites).map {
-    case (pod, sprite) => PodActor(pod, sprite)
-  }
-  def logActors =
-    loggers.zip(Window.terminals).map { case (l, t) => LogActor(l.flush, t) }
-  def actors = logActors ::: podActors
-
-  def isFinished: Boolean = game.isFinished
-
-  def nextTurn() = {
-    Print(s"step: $step")
-    game = game.nextTurn
+  def apply(game: Game): Board = {
+    val playerA = PlayerLogger(game.playerA, loggerA)
+    val playerB = PlayerLogger(game.playerB, loggerB)
+    new Board(new Game(game.race, playerA, playerB, game.judge, game.step))
   }
 
-  def frames: Stream[Frame] = {
-    if (step == 0) {
-      val head = Frame(step, actors)
-      nextTurn()
-      if (!isFinished) head #:: Frame(step, actors) #:: frames
-      else head #:: Frame(step, actors) #:: Stream.empty
-    } else {
-      nextTurn()
-      if (!isFinished) Frame(step, actors) #:: frames
-      else Frame(step, actors) #:: Stream.empty
-    }
-  }
-
-  def play() = animation.play()
-}
-
-object Board {
   @JSExportTopLevel("csb.Board.main")
   def main(canvas: html.Canvas): Unit = {
 
     val playerA = new MetaPlayer(DefaultConfig)
-    val playerB = new MetaPlayer(BetterConfig)
+    val playerB = new MetaPlayer(DefaultConfig)
 
     val laps = 3
     val checkpoints =
@@ -137,12 +130,10 @@ object Board {
           p.toPoint
         }
     val race = new Race(checkpoints, laps)
-
     val judge = JudgeSimulation()
-    val game = Game(race, playerA, playerB, judge, 0)
+    val game = new Game(race, playerA, playerB, judge, 0)
 
-    val board = new Board(game)
-    board.play()
+    Board(game).play()
   }
 }
 

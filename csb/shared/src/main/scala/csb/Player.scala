@@ -217,9 +217,6 @@ case class JudgeRepeat(val input: () => Stream[String]) extends Judge {
 }
 
 case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step: Int) {
-  def this(race: Race, playerA: Player, playerB: Player, judge: Judge) {
-    this(race, playerA, playerB, judge, 0)
-  }
   def winner(game: Game): Option[Pod] = game.race.winner
   def isFinished = judge.isFinished(this)
   def nextTurn: Game = {

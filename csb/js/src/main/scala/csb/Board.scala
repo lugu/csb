@@ -105,7 +105,6 @@ class Board(game: Game) {
 }
 
 object Board {
-
   val loggers = List(new Logger(), new Logger(), Logger.default)
 
   def loggerA = loggers(0)
@@ -116,8 +115,10 @@ object Board {
     val playerB = PlayerLogger(game.playerB, loggerB)
     new Board(new Game(game.race, playerA, playerB, game.judge, game.step))
   }
+}
 
-  @JSExportTopLevel("csb.Board.main")
+object Application {
+  @JSExportTopLevel("csb.Application.main")
   def main(canvas: html.Canvas): Unit = {
 
     val playerA = new MetaPlayer(DefaultConfig)

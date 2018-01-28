@@ -220,6 +220,7 @@ case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step
   def winner(game: Game): Option[Pod] = game.race.winner
   def isFinished = judge.isFinished(this)
   def nextTurn: Game = {
+    Print(s"step: $step")
     IO.debug()
     val isFinished = judge.isFinished(this)
     val commands = playerA.commands(race) ::: playerB.commands(race.inverted)

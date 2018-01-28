@@ -1,4 +1,25 @@
-in: 3
+
+package csb.races
+
+trait RaceRecord {
+  val record: String
+
+  def input: Stream[String] = record.split("\n").filter(_.startsWith("in: ")).map(_.drop(4)).toStream
+  def output: Stream[String] = record.split("\n").filter(_.startsWith("out: ")).map(_.drop(5)).toStream
+
+  def race = csb.Race.parseInput(input)
+  def playerA = csb.DummyPlayer()
+  def playerB = csb.DummyPlayer()
+  def judge = csb.JudgeReplay(input.drop(race.checkpoints.size + 6))
+  def game = csb.Game(race, playerA, playerB, judge, 0)
+}
+
+object AppRaceRecord1 extends App {
+  RaceRecord1.game.play
+}
+
+object RaceRecord1 extends RaceRecord {
+  val record = """in: 3
 in: 6
 in: 14116 7773
 in: 13871 1220
@@ -123,4 +144,5 @@ out: 12951 2425 148 148 PILOT1-CORRECTED
 in: 10855 -3033 -242 49 92 2
 in: 11484 -107 -103 342 65 2
 in: 13431 876 70 -364 332 2
-in: 14280 853 -97 -358 204 2
+in: 14280 853 -97 -358 204 2"""
+}

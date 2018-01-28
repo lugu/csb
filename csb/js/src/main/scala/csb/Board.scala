@@ -124,9 +124,13 @@ object Board {
 }
 
 object Application {
+
   @JSExportTopLevel("csb.Application.main")
   def main(canvas: html.Canvas): Unit = {
+    Board(csb.races.RaceRecord1.game).play()
+  }
 
+  def demoGame = {
     val playerA = new MetaPlayer(DefaultConfig)
     val playerB = new MetaPlayer(DefaultConfig)
 
@@ -140,7 +144,6 @@ object Application {
     val judge = JudgeSimulation()
     val game = new Game(race, playerA, playerB, judge, 0)
 
-    Board(game).play()
   }
 }
 

@@ -65,12 +65,17 @@ class Logger {
   }
 }
 
-// Board connect the simulation with the board
-class Board(var game: Game, var recorder: RaceRecord) {
-
-  def this(game: Game) {
-    this(game, game.race.newRecorder)
+case class PlayerLogger(player: Player, logger: Logger) extends Player {
+  def commands(race: Race): List[Command] = {
+      logger.makeDefault()
+      val c = player.commands(race)
+      Logger.default.makeDefault()
+      c
   }
+}
+
+// Board connect the simulation with the board
+class Board(var game: Game) {
 
   def step = game.step
   def race = game.race
@@ -83,6 +88,8 @@ class Board(var game: Game, var recorder: RaceRecord) {
   def loggerA = loggers(0)
   def loggerB = loggers(1)
 
+  game = Game(race, PlayerLogger(playerA, loggerA), PlayerLogger(playerB, loggerB), game.judge, game.step)
+
   val animation = new Animation(FrameTimeline(frames))
   val controller = new WindowController(animation)
 
@@ -93,26 +100,11 @@ class Board(var game: Game, var recorder: RaceRecord) {
     loggers.zip(Window.terminals).map { case (l, t) => LogActor(l.flush, t) }
   def actors = logActors ::: podActors
 
-  def commands = {
-    val cmds = {
-      loggerA.makeDefault()
-      playerA.commands(race)
-    } ::: {
-      loggerB.makeDefault()
-      playerB.commands(race.inverted)
-    }
-    Logger.default.makeDefault()
-    cmds
-  }
-
   def isFinished: Boolean = game.isFinished
 
   def nextTurn() = {
-    Print("race step: " + step)
-    val playerCommands = commands
+    Print(s"step: $step")
     game = game.nextTurn
-    recorder = recorder.updateWith(game.race, playerCommands.map(c => Some(c)))
-    if (isFinished) recorder.dump()
   }
 
   def frames: Stream[Frame] = {

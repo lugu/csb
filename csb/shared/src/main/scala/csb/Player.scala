@@ -217,7 +217,36 @@ case class JudgeRepeat(val input: () => Stream[String]) extends Judge {
 }
 
 case class JudgeTest(var input: Stream[String]) extends Judge {
-  import org.scalatest.Assertions._
+
+  import org.scalatest._
+  import Matchers._
+
+  case class ComparePod(pod: Pod, reference: Pod) {
+
+    def testPoint(clue: String, point: Point, reference: Point, tolerance: Double) {
+      testValue(clue + ".x", point.x, reference.x, tolerance)
+      testValue(clue + ".y", point.y, reference.y, tolerance)
+    }
+
+    def testValue(clue: String, value: Double, reference: Double, tolerance: Double) {
+      try {
+        withClue(s"test $clue:") {
+          value should equal (reference +- tolerance)
+        }
+      } catch {
+        case (e: org.scalatest.exceptions.TestFailedException) => {
+          Print(e.getMessage)
+        }
+      }
+    }
+    def test = {
+      testPoint("orientation", pod.orientation, reference.orientation, 0.001)
+      testPoint("speed", pod.speed, reference.speed, 1)
+      testPoint("position", pod.position, reference.position, 1)
+    }
+  }
+
+
   override def isFinished(game: Game): Boolean = input.isEmpty
   def expectedPods(race: Race): List[Pod] = {
     val updater = PodUpdater(race.checkpoints)
@@ -238,12 +267,7 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
       val solution = expectedPods(race)
       val computed = computedPods(race, commands)
       solution.take(2).zip(computed.take(2)).foreach {
-        case (sol: Pod, com: Pod) =>
-        try {
-          assert(sol.position == com.position, "compare pod position")
-        } catch {
-          case (e: org.scalatest.exceptions.TestFailedException) => Print(e.getMessage)
-        }
+        case (sol: Pod, com: Pod) => ComparePod(com, sol).test
       }
       Race(solution, race.checkpoints, race.laps)
     }

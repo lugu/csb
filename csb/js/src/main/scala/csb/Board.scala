@@ -93,7 +93,7 @@ class Board(game: Game) {
   def nextTurn: Board = new Board(game.nextTurn)
 
   def frames: Stream[Frame] = {
-    Print("step :" + game.step)
+    Print("step: " + game.step)
     if (game.step == 0) {
       val head = Frame(game.step, actors)
       if (!game.isFinished)
@@ -129,7 +129,7 @@ object Application {
 
   @JSExportTopLevel("csb.Application.main")
   def main(canvas: html.Canvas): Unit = {
-    Board(csb.races.RaceRecord2.game).play()
+    Board(csb.races.RaceRecord1.game).play()
   }
 
   def demoGame = {

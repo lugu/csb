@@ -9,6 +9,6 @@ trait RaceRecord {
   def race = csb.Race.parseInput(input)
   def playerA = csb.DummyPlayer()
   def playerB = csb.DummyPlayer()
-  def judge = csb.JudgeReplay(input.drop(race.checkpoints.size + 6))
+  def judge = csb.JudgeTest(input.drop(race.checkpoints.size + 6))
   def game = csb.Game(race, playerA, playerB, judge, 0)
 }

@@ -216,11 +216,45 @@ case class JudgeRepeat(val input: () => Stream[String]) extends Judge {
   }
 }
 
+case class JudgeTest(var input: Stream[String]) extends Judge {
+  import org.scalatest.Assertions._
+  override def isFinished(game: Game): Boolean = input.isEmpty
+  def expectedPods(race: Race): List[Pod] = {
+    val updater = PodUpdater(race.checkpoints)
+    val expected = input
+      .take(4)
+      .map { line => updater.parsePodUpdate(line).pod }
+      .toList
+    input = input.drop(4)
+    expected
+  }
+  def computedPods(race: Race, commands: List[Command]): List[Pod] = {
+    race.simulate(commands).pods
+  }
+
+  def judge(race: Race, commands: List[Command]): Race = input.headOption match {
+    case None => race
+    case _ => {
+      val solution = expectedPods(race).take(2)
+      val computed = computedPods(race, commands).take(2)
+      solution.zip(computed).foreach {
+        case (sol: Pod, com: Pod) =>
+        try {
+          assert(sol.position == com.position, "compare pod position")
+        } catch {
+          case (e: org.scalatest.exceptions.TestFailedException) => Print(e.getMessage)
+        }
+      }
+      Race(solution, race.checkpoints, race.laps)
+    }
+  }
+}
+
+
 case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step: Int) {
   def winner(game: Game): Option[Pod] = game.race.winner
   def isFinished = judge.isFinished(this)
   def nextTurn: Game = {
-    Print(s"step: $step")
     IO.debug()
     val isFinished = judge.isFinished(this)
     val commands = playerA.commands(race) ::: playerB.commands(race.inverted)

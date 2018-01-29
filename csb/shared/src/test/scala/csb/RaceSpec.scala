@@ -3,38 +3,6 @@ package csb
 import org.scalatest._
 import scala.io.Source
 
-case class JudgeTest(var input: Stream[String]) extends Judge {
-  import org.scalatest.Assertions._
-  override def isFinished(game: Game): Boolean = input.isEmpty
-  def expectedPods(race: Race): List[Pod] = {
-    val updater = PodUpdater(race.checkpoints)
-    val expected = input
-      .take(4)
-      .map { line => updater.parsePodUpdate(line).pod }
-      .toList
-    input = input.drop(4)
-    expected
-  }
-  def computedPods(race: Race, commands: List[Command]): List[Pod] = {
-    race.simulate(commands).pods
-  }
-
-  def judge(race: Race, commands: List[Command]): Race = input.headOption match {
-    case None => race
-    case _ => {
-      val solution = expectedPods(race)
-      val computed = computedPods(race, commands)
-      solution.zip(computed).foreach {
-        case (sol: Pod, com: Pod) =>
-        // FIXME: shall fix this
-        // assert(sol.position == com.position, "compare pod position")
-      }
-      Race(solution, race.checkpoints, race.laps)
-    }
-  }
-}
-
-
 class RaceSpec extends FlatSpec with Matchers {
 
   val dummyCheckpoints = List(Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4), Point(5, 5))
@@ -75,19 +43,11 @@ class RaceSpec extends FlatSpec with Matchers {
   }
 
   "Judge" should "be able to resolve collision 1" in {
-    val race = Race.parseInput(Source.fromResource("collision-1.txt").getLines.toStream)
-    val playerA = ReplayPlayer(Source.fromResource("collision-1-output.txt").getLines.toStream)
-    val playerB = DummyPlayer()
-    val judge = JudgeTest(Source.fromResource("collision-1.txt").getLines.toStream.drop(race.checkpoints.size + 6))
-    val game = Game(race, playerA, playerB, judge, 0).play
+    csb.races.RaceRecord2.game.play
   }
 
   "Judge" should "be able to resolve collision 2" in {
-    val race = Race.parseInput(Source.fromResource("collision-2.txt").getLines.toStream)
-    val playerA = ReplayPlayer(Source.fromResource("collision-2-output.txt").getLines.toStream)
-    val playerB = DummyPlayer()
-    val judge = JudgeTest(Source.fromResource("collision-2.txt").getLines.toStream.drop(race.checkpoints.size + 6))
-    val game = Game(race, playerA, playerB, judge, 0).play
+    csb.races.RaceRecord3.game.play
   }
 }
 

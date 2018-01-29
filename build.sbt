@@ -12,7 +12,7 @@ lazy val csb =
     jvmSettings(
       scalaVersion := "2.12.4",
       libraryDependencies ++= Seq(
-              "org.scalatest" %% "scalatest" % "3.0.4" % "test"
+              "org.scalatest" %% "scalatest" % "3.0.4"
       )
     ).
     jsSettings(
@@ -22,8 +22,8 @@ lazy val csb =
       libraryDependencies ++= Seq(
           "org.scala-js" %%% "scalajs-dom" % "0.9.4",
           "com.lihaoyi" %%% "scalatags" % "0.6.7",
-          "org.scalactic" %%% "scalactic" % "3.0.4" % "test",
-          "org.scalatest" %%% "scalatest" % "3.0.4" % "test"
+          "org.scalactic" %%% "scalactic" % "3.0.4",
+          "org.scalatest" %%% "scalatest" % "3.0.4"
       )
     ).
     nativeSettings(

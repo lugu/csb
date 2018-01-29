@@ -235,9 +235,9 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
   def judge(race: Race, commands: List[Command]): Race = input.headOption match {
     case None => race
     case _ => {
-      val solution = expectedPods(race).take(2)
-      val computed = computedPods(race, commands).take(2)
-      solution.zip(computed).foreach {
+      val solution = expectedPods(race)
+      val computed = computedPods(race, commands)
+      solution.take(2).zip(computed.take(2)).foreach {
         case (sol: Pod, com: Pod) =>
         try {
           assert(sol.position == com.position, "compare pod position")

@@ -20,8 +20,7 @@ object Window {
     .asInstanceOf[dom.CanvasRenderingContext2D]
   def clear() = renderer.clearRect(0, 0, Screen.width, Screen.height)
 
-  def circle(position: Pixel, radius: Int) = {
-  }
+  def circle(position: Pixel, radius: Int) = {}
 
   def sprite(name: String) =
     Sprite(document.getElementById(name).asInstanceOf[dom.raw.HTMLImageElement],
@@ -70,10 +69,10 @@ class Logger {
 
 case class PlayerLogger(player: Player, logger: Logger) extends Player {
   def commands(race: Race): List[Command] = {
-      logger.makeDefault()
-      val c = player.commands(race)
-      Logger.default.makeDefault()
-      c
+    logger.makeDefault()
+    val c = player.commands(race)
+    Logger.default.makeDefault()
+    c
   }
 }
 
@@ -86,7 +85,9 @@ class Board(game: Game) {
     case (p: Point, i: Int) => CheckpointActor(Pixel.fromPoint(p), i.toString)
   }
   def logActors =
-    Board.loggers.zip(Window.terminals).map { case (l, t) => LogActor(l.flush, t) }
+    Board.loggers.zip(Window.terminals).map {
+      case (l, t) => LogActor(l.flush, t)
+    }
   def actors = logActors ::: checkpointActors ::: podActors
 
   def nextTurn: Board = new Board(game.nextTurn)
@@ -95,7 +96,8 @@ class Board(game: Game) {
     Print("step :" + game.step)
     if (game.step == 0) {
       val head = Frame(game.step, actors)
-      if (!game.isFinished) head #:: Frame(game.step, actors) #:: nextTurn.frames
+      if (!game.isFinished)
+        head #:: Frame(game.step, actors) #:: nextTurn.frames
       else head #:: Frame(game.step, actors) #:: Stream.empty
     } else {
       if (!game.isFinished) Frame(game.step, actors) #:: nextTurn.frames
@@ -127,7 +129,7 @@ object Application {
 
   @JSExportTopLevel("csb.Application.main")
   def main(canvas: html.Canvas): Unit = {
-    Board(csb.races.RaceRecord1.game).play()
+    Board(csb.races.RaceRecord2.game).play()
   }
 
   def demoGame = {

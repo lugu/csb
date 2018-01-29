@@ -1,24 +1,11 @@
-
 package csb.races
-
-trait RaceRecord {
-  val record: String
-
-  def input: Stream[String] = record.split("\n").filter(_.startsWith("in: ")).map(_.drop(4)).toStream
-  def output: Stream[String] = record.split("\n").filter(_.startsWith("out: ")).map(_.drop(5)).toStream
-
-  def race = csb.Race.parseInput(input)
-  def playerA = csb.DummyPlayer()
-  def playerB = csb.DummyPlayer()
-  def judge = csb.JudgeReplay(input.drop(race.checkpoints.size + 6))
-  def game = csb.Game(race, playerA, playerB, judge, 0)
-}
 
 object AppRaceRecord1 extends App {
   RaceRecord1.game.play
 }
 
 object RaceRecord1 extends RaceRecord {
+  val label = "18 turns of a race"
   val record = """in: 3
 in: 6
 in: 14116 7773

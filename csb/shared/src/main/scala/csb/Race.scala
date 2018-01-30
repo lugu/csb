@@ -199,7 +199,23 @@ case class Race (
       case (pod: Pod, c: Command) ⇒
         pod.update(c)
     }
-    Race(p, checkpoints, laps)
+    val p2 = p.map(pod => {
+      val collisions = for (other <- p; if (pod != other); if (pod.detectPossibleCollision(other, 0))) yield other
+      val speedImpact = collisions.map(other => {
+        val massCoef = 2
+        val nx = pod.position.x - other.position.x
+        val ny = pod.position.y - other.position.y
+        val squareDist = nx*nx + ny*ny
+        val dvx = pod.speed.x - other.speed.x
+        val dvy = pod.speed.y - other.speed.y
+        val product = nx*dvx + ny*dvy
+        val fx = (nx*product) / (squareDist * massCoef)
+        val fy = (ny*product) / (squareDist * massCoef)
+        Point(- fx, - fy)
+      }).foldLeft(Point(0, 0))(_ + _)
+      Pod(pod.position + speedImpact, pod.destinations, pod.orientation, pod.speed, pod.boostAvailable)
+    })
+    Race(p2, checkpoints, laps)
   }
 }
 

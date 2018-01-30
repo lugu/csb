@@ -65,6 +65,7 @@ case class Point(x: Double, y: Double) {
   // floor a 2D vector in absolute norm
   def floor = Point(if (x < 0) x.ceil else x.floor, if (y < 0) y.ceil else y.floor)
   def data: Array[Double] = Array(x, y)
+  def angleToEast = Point(1, 0).radianWith(this)
 }
 
 object Point extends {

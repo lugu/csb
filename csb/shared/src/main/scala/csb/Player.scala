@@ -240,7 +240,7 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
       }
     }
     def test = {
-      testPoint("orientation", pod.orientation, reference.orientation, 0.001)
+      testValue("orientation", pod.orientation.angleToEast.degree, reference.orientation.angleToEast.degree, 1)
       testPoint("speed", pod.speed, reference.speed, 1)
       testPoint("position", pod.position, reference.position, 1)
     }

@@ -90,9 +90,9 @@ case class Pod(
   def update(command: Command) = {
     val expectedOrientation = (command.direction - position).normalize
     val desiredOrientation = orientation.rotate(Degree(max(-18, min(18, expectedOrientation.radianWith(orientation).degree))))
-    val angle = desiredOrientation.radianWith(Point(1, 0))
-    val newOrientation = Point(1, 0).rotate(angle)
-    val newSpeed = speed + newOrientation * command.thrust
+    val newSpeed = speed + desiredOrientation * command.thrust
+    val angle = Angle.fromDegree(math.round(desiredOrientation.angleToEast.degree))
+    val newOrientation = Point(1, 0).rotate(-angle)
     Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, boostAvailable).updateDestination
   }
 

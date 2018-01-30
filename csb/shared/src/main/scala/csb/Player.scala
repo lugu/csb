@@ -217,9 +217,6 @@ case class JudgeRepeat(val input: () => Stream[String]) extends Judge {
 
 case class JudgeTest(var input: Stream[String]) extends Judge {
 
-  import org.scalatest._
-  import Matchers._
-
   case class ComparePod(pod: Pod, reference: Pod) {
 
     def testPoint(clue: String, point: Point, reference: Point, tolerance: Double) {
@@ -228,6 +225,11 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
     }
 
     def testValue(clue: String, value: Double, reference: Double, tolerance: Double) {
+      if (value < reference - tolerance || value > reference + tolerance)
+        Print(s"test $clue: $value should be $reference +/- $tolerance")
+      /*
+      import org.scalatest._
+      import Matchers._
       try {
         withClue(s"test $clue:") {
           value should equal (reference +- tolerance)
@@ -237,6 +239,7 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
           Print(e.getMessage)
         }
       }
+      */
     }
     def test = {
       testValue("orientation", pod.orientation.angleToEast.degree, reference.orientation.angleToEast.degree, 1)

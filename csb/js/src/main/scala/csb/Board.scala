@@ -128,7 +128,7 @@ object Application {
 
   @JSExportTopLevel("csb.Application.main")
   def main(canvas: html.Canvas): Unit = {
-    Board(csb.races.RaceRecord2.game).play()
+    Board(demoGame /*csb.races.RaceRecord2.game*/).play()
   }
 
   def demoGame = {
@@ -143,8 +143,7 @@ object Application {
         }
     val race = new Race(checkpoints, laps)
     val judge = JudgeSimulation()
-    val game = new Game(race, playerA, playerB, judge, 0)
-
+    new Game(race, playerA, playerB, judge, 0)
   }
 }
 

@@ -255,7 +255,7 @@ case class Record(pod: Pod, command: Option[Command]) {
 
 case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Record]]) {
     def updateWith(race: Race, commands: List[Option[Command]]) = {
-      val record = List(Record(race.pods(0), commands(0)), Record(race.pods(1), commands(1)), 
+      val record = List(Record(race.pods(0), commands(0)), Record(race.pods(1), commands(1)),
                       Record(race.pods(2), commands(3)), Record(race.pods(3), commands(3)))
       RaceRecord(laps, checkpoints, steps ::: List(record))
     }

@@ -175,12 +175,20 @@ case class Pod(
     Pod(position, destinations.tail, orientation, speed, boostAvailable) else this
 
   def update(command: Command) = {
+    val thrust = if (command.thrust == Pilot.boost) {
+      if (!boostAvailable) {
+        Print(s"WARNING: BOOST is not available to $this ($command)" )
+        0
+      } else 650
+    } else if (command.thrust == Pilot.shield) 0 else command.thrust
+    val hasBoost = if (command.thrust == Pilot.boost) false else boostAvailable
+    val hasShiled = if (command.thrust == Pilot.shield) true else false
     val expectedOrientation = (command.direction - position).normalize
     val desiredOrientation = orientation.rotate(Degree(max(-18, min(18, expectedOrientation.radianWith(orientation).degree))))
-    val newSpeed = speed + desiredOrientation * command.thrust
+    val newSpeed = speed + desiredOrientation * thrust
     val angle = Angle.fromDegree(math.round(desiredOrientation.angleToEast.degree))
     val newOrientation = Point(1, 0).rotate(-angle)
-    Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, boostAvailable).updateDestination
+    Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, hasBoost, hasShield).updateDestination
   }
 
   def updateWith(u: PodUpdate): Pod = {

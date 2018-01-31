@@ -128,7 +128,9 @@ object Application {
 
   @JSExportTopLevel("csb.Application.main")
   def main(canvas: html.Canvas): Unit = {
-    Board(demoGame /*csb.races.RaceRecord2.game*/).play()
+    val game = demoGame
+    // val game = csb.races.RaceRecord2.game
+    Board(game).play()
   }
 
   def demoGame = {

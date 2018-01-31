@@ -87,6 +87,13 @@ class PlayerSpec extends FlatSpec with Matchers {
     assert(Point(1, 0).scalar(Point(1, 0)) == 1.0)
   }
 
+  it should "find closet point in a segment" in {
+    assert(Point(0, 0).closest(Point(0, 0), Point(1, 1)) == Point(0, 0))
+    assert(Point(0, 0).closest(Point(-1, -1), Point(1, 1)) == Point(0, 0))
+    assert(Point(1, 1).closest(Point(0, 2), Point(2, 0)) == Point(1, 1))
+    assert(Point(1, 1).closest(Point(0, 2), Point(2, 2)) == Point(1, 2))
+  }
+
   it should "measure distance to other" in {
     assert(Point(0, 0).distanceTo(Point(1, 0)) == 1.0)
     assert(Point(0, 3).normalize == Point(0, 1))
@@ -106,6 +113,25 @@ class PlayerSpec extends FlatSpec with Matchers {
     assert(Pod.distanceToLine(Point(1, 1), Point(2, 4), Point(2, 6)) >= 0.5)
     assert(Pod.distanceToLine(Point(1, 1), Point(2, 4), Point(21, 41)) == 0)
     assert(Pod.distanceToLine(Point(1, 1), Point(2, 4), Point(21, 42)) <= 1)
+  }
+
+  it should "compute the collision time" in {
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
+      Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
+      Pod(Point(400, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
+      Pod(Point(799, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
+      Pod(Point(800, 0), checkpoints, orientation, Point(0, 0), true)) == None)
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(200, 0), true).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(0, 0), true)) == Some(1))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0), true).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0.5))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0), true).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(400, 0), true)) == None)
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0), true).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(100, 0), true)) == Some(2.0/3))
   }
 
   "Race" should "be able to manage its checkpoints" in {

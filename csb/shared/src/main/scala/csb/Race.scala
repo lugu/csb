@@ -9,7 +9,8 @@ case class Pod(
     val destinations:   List[Point],
     val orientation:    Point,
     val speed:          Point,
-    val boostAvailable: Boolean) {
+    val boostAvailable: Boolean,
+    val hasShield: Boolean = false) {
 
   def this(p: Point, d: List[Point], o: Point, s: Point) = this(p, d, o, s, true)
 
@@ -21,13 +22,99 @@ case class Pod(
   override def toString = s"Pod($position, List($destination), $orientation, $speed, $boostAvailable)"
   def data = position.data ++ destination.data ++ orientation.data ++ speed.data ++ Array(0.0)
 
-  val checkpointRadius = 600
-  val podRadius = 400
+  def checkpointRadius = 600
+  def podRadius = 400
 
   def stepsToDestination = ((distance - checkpointRadius) / speed.norm).toInt
   def nextPosition = position + speed
 
   def distanceToPod(other: Pod) = (other.position - position).norm - 2 * podRadius
+  def collisionTime(other: Pod): Option[Double] = {
+    val squareDist = (position).squareDistanceTo(other.position)
+    val dist = (position).distanceTo(other.position)
+    val squareRadii = (podRadius + other.podRadius) * (podRadius + other.podRadius)
+    if (squareDist < squareRadii) return Some(0)
+    val x = position.x - other.position.x
+    val y = position.y - other.position.y
+    val myp = Point(x, y)
+    val vx = speed.x - other.speed.x
+    val vy = speed.y - other.speed.y
+    val up = Point(0, 0)
+    val p = up.closest(myp, Point(x + vx, y + vy))
+
+    // Square of the distance between u and the closest point to u on
+    // the line described by our speed vector
+    val pdist = up.squareDistanceTo(p)
+
+    // Square of the distance between us and that point
+    val mypdist = myp.squareDistanceTo(p)
+
+    // If the distance between u and this line is less than the sum of
+    // the radii, there might be a collision
+    if (pdist < squareRadii) {
+      // Our speed on the line
+        val length = sqrt(vx*vx + vy*vy)
+        if (length == 0) return None // immobile object won't collide
+
+        // We move along the line to find the point of impact
+        val backdist = sqrt(squareRadii - pdist)
+        val p2 = p - Point(backdist * (vx / length), backdist * (vy / length))
+
+        // If the point is now further away it means we are not going
+        // the right way, therefore the collision won't happen
+        if (myp.squareDistanceTo(p2) > mypdist) {
+            return None
+        }
+
+        val pdist2 = p2.distanceTo(myp);
+
+        // The point of impact is further than what we can travel in
+        // one turn
+        if (pdist2 > length) {
+            return None
+        }
+
+        // Time needed to reach the impact point
+        val t = pdist2 / length;
+
+        return Some(t)
+    }
+    return None
+  }
+  def bounce(other: Pod): Pod = {
+    // If a pod has its shield active its mass is 10 otherwise it's 1
+    val m1 = if (hasShield) 10 else 1
+    val m2 = if (other.hasShield) 10 else 1
+    val mcoeff = (m1 + m2) / (m1 * m2)
+
+    val n = position - other.position
+
+    // Square of the distance between the 2 pods. This value could be hardcoded because it is always 800²
+    val nxnysquare = position.squareDistanceTo(other.position)
+
+    val dv = speed - other.speed
+
+    // fx and fy are the components of the impact vector. product is just there for optimisation purposes
+    val product = n.x*dv.x + n.y*dv.y
+    val f = n * (product / nxnysquare * mcoeff)
+
+    // We apply the impact vector once
+    val newSpeed = speed - (f * (1.0 / m1))
+    val otherNewSpeed = other.speed + (f * (1.0 / m2))
+
+    // If the norm of the impact vector is less than 120, we normalize it to 120
+    val impulse = sqrt(f.x*f.x + f.y*f.y)
+    val newF = if (f.norm < 120.0) f.normalize * 120.0 else f
+
+    // We apply the impact vector a second time
+    val newNewSpeed = newSpeed - (f * (1.0 / m1))
+    val newOtherNewSpeed = otherNewSpeed + (f * ( 1.0 / m2))
+
+    // This is one of the rare places where a Vector class would have made the code more readable.
+    // But this place is called so often that I can't pay a performance price to make it more readable.
+    Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
+  }
+
   def detectCollision(other: Pod) = detectPossibleCollision(other, 200)
   def detectPossibleCollision(other: Pod, extra: Int) = {
     val dist = (position + speed).distanceTo(other.position + other.speed)
@@ -194,28 +281,30 @@ case class Race (
     }
   }
 
-  def simulate(commands: List[Command]): Race = {
+  def simulate(commands: List[Command]): Race =
+    simulateCommands(commands).simulateCollision
+
+  def simulateCommands(commands: List[Command]): Race = {
     val p = pods.zip(commands).map {
       case (pod: Pod, c: Command) ⇒
         pod.update(c)
     }
-    val p2 = p.map(pod => {
-      val collisions = for (other <- p; if (pod != other); if (pod.detectPossibleCollision(other, 0))) yield other
-      val speedImpact = collisions.map(other => {
-        val massCoef = 2
-        val nx = pod.position.x - other.position.x
-        val ny = pod.position.y - other.position.y
-        val squareDist = nx*nx + ny*ny
-        val dvx = pod.speed.x - other.speed.x
-        val dvy = pod.speed.y - other.speed.y
-        val product = nx*dvx + ny*dvy
-        val fx = (nx*product) / (squareDist * massCoef)
-        val fy = (ny*product) / (squareDist * massCoef)
-        Point(- fx, - fy)
-      }).foldLeft(Point(0, 0))(_ + _)
-      Pod(pod.position + speedImpact, pod.destinations, pod.orientation, pod.speed, pod.boostAvailable)
+    Race(p, checkpoints, laps)
+  }
+
+  def simulateCollision: Race = {
+    val p = pods.map(pod => {
+      val collisions: List[Tuple2[Pod,Double]] = pods.filter(p => p != pod).flatMap{ other =>
+        val collision: Option[Tuple2[Pod,Double]] = pod.collisionTime(other).map(t => (other, t))
+        collision
+      }
+      collisions.sortBy{ case (p: Pod, t: Double) => t }.map{
+        case (p: Pod, t: Double) => p
+        }.foldLeft(pod){
+          case (p: Pod, other: Pod) => p.bounce(other)
+        }
     })
-    Race(p2, checkpoints, laps)
+    Race(p, checkpoints, laps)
   }
 }
 

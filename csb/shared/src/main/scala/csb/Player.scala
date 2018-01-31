@@ -226,7 +226,7 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
 
     def testValue(clue: String, value: Double, reference: Double, tolerance: Double) {
       if (value < reference - tolerance || value > reference + tolerance)
-        Print(s"test $clue: $value should be $reference +/- $tolerance")
+        if (IO.verbose) Print(s"test $clue: $value should be $reference +/- $tolerance")
       /*
       import org.scalatest._
       import Matchers._

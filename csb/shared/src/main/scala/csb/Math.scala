@@ -44,8 +44,10 @@ case class Point(x: Double, y: Double) {
   def -(other: Point) = Point(x - other.x, y - other.y)
   def unary_- = Point(-x, -y)
   def *(factor: Double) = Point(x * factor, y * factor)
+  def squareDistanceTo(other: Point): Double =
+    (x - other.x) * (x - other.x) + (y - other.y) * (y - other.y)
   def distanceTo(other: Point): Double =
-    sqrt(pow(x - other.x, 2) + pow(y - other.y, 2))
+    sqrt(squareDistanceTo(other))
   def toInt = Array(x.toInt, y.toInt)
   def normalize: Point = if (this == Point(0, 0)) this
   else Point(x / norm, y / norm)
@@ -66,6 +68,15 @@ case class Point(x: Double, y: Double) {
   def floor = Point(if (x < 0) x.ceil else x.floor, if (y < 0) y.ceil else y.floor)
   def data: Array[Double] = Array(x, y)
   def angleToEast = Point(1, 0).radianWith(this)
+  def closest(a: Point, b: Point): Point = {
+    val da = b.y - a.y
+    val db = a.x - b.x
+    val c1 = da * a.x + db * a.y
+    val c2 = -db * x + da * y
+    val det = da * da + db * db
+    if (det != 0) Point((da*c1 - db*c2) / det, (da*c2 + db*c1) / det)
+    else Point(x, y)
+  }
 }
 
 object Point extends {

@@ -6,20 +6,20 @@ object RunSimulation extends App {
 
 object Simulation {
 
-  def fitness(player: Player): Int = {
-    def judge = JudgeSimulation()
-    def race: Race = Race.random
-    def game(player: Player): Game = Game(race, player, player, judge, 0)
+  val races = for (i <- 1 to 10) yield Race.random
+  val judge = JudgeSimulation()
 
-    game(player).play.step
+  def fitness(player: Player): Int = {
+
+    races.map{ race => Game(race, player, player, judge, 0).play.step }.sum
   }
 
   def run() {
-    println("Default fitness: " + defaultIndividual.fitness)
-    println("Starting simulation.")
+    Print("Default fitness: " + defaultIndividual.fitness)
+    Print("Starting simulation.")
     val leader = population(100).generation(3, 100).leader
-    println("Simulation completed.")
-    println("Config: " + leader.config.p)
+    Print("Simulation completed.")
+    Print("Config: " + leader.config.p)
   }
 
   case class Individual(config: Config, fitness: Int) {

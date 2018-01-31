@@ -229,7 +229,7 @@ object Race {
       input.take(4).map{
         (line: String) => {
           val u = updater.parsePodUpdate(line)
-          Pod(u.position, destinations, u.orientation, u.speed, true)
+          Pod(u.position, destinations, (destinations.head - u.position).normalize, u.speed, true)
         }
       }.toList
     }

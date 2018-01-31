@@ -112,7 +112,8 @@ case class Pod(
 
     // This is one of the rare places where a Vector class would have made the code more readable.
     // But this place is called so often that I can't pay a performance price to make it more readable.
-    Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
+    // Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
+    Pod(position, destinations, orientation, newSpeed, boostAvailable, hasShield)
   }
 
   def detectCollision(other: Pod) = detectPossibleCollision(other, 200)
@@ -211,7 +212,6 @@ case class Race (
     val checkpoints: List[Point],
     val laps:        Int) {
 
-  def this(checkpoints: List[Point], laps: Int) = this(Race.initPods(checkpoints, 3), checkpoints, 3)
   def newRecorder = RaceRecord(laps, checkpoints, List())
 
   def myPods = pods.take(2)
@@ -318,6 +318,22 @@ case class Race (
 
 object Race {
 
+
+  def random: Race = {
+    import scala.util.Random
+
+    val width = 16000
+    val margin = 400
+    val height = 9000
+    def randomWidth = margin + Random.nextInt(width - 2 * margin)
+    def randomHeight = margin + Random.nextInt(height - 2 * margin)
+    def randomPosition = Point(randomWidth, - randomHeight)
+    val laps = Random.nextInt(6)
+    val checkpointsNb = 3 + Random.nextInt(2)
+    val checkpoints = (1 to checkpointsNb).map(i => randomPosition)
+    Race(checkpoints.toList, laps)
+  }
+
   def parseInput(input: Stream[String]): Race = {
     def parsePods(checkpoints: List[Point], input: Stream[String]): List[Pod] = {
       val updater = PodUpdater(checkpoints)
@@ -342,12 +358,13 @@ object Race {
     Race(pods, checkpoints, laps)
   }
 
-  def initPods(checkpoints: List[Point], laps: Int): List[Pod] = {
+  def apply(checkpoints: List[Point], laps: Int): Race = {
     val checkpointsShift = checkpoints.tail :+ checkpoints.head
     val destinations = (for (i ← 0 to laps) yield checkpointsShift).flatten.toList
     val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
     val positions = List(1, 3, -1, -3).map(pos ⇒ checkpoints(0) + departLine * (pos * 450))
-    positions.map(p ⇒ Pod(p, destinations, (checkpoints(1) - p).normalize, Point(0, 0), true))
+    val pods = positions.map(p ⇒ Pod(p, destinations, (checkpoints(1) - p).normalize, Point(0, 0), true))
+    Race(pods, checkpoints, laps)
   }
 
 }

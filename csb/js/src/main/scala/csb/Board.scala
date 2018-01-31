@@ -136,16 +136,8 @@ object Application {
   def demoGame = {
     val playerA = new MetaPlayer(DefaultConfig)
     val playerB = new MetaPlayer(DefaultConfig)
-
-    val laps = 3
-    val checkpoints =
-      List(Pixel(304, 138), Pixel(220, 401), Pixel(725, 126), Pixel(696, 390))
-        .map { p =>
-          p.toPoint
-        }
-    val race = new Race(checkpoints, laps)
     val judge = JudgeSimulation()
-    new Game(race, playerA, playerB, judge, 0)
+    new Game(Race.random, playerA, playerB, judge, 0)
   }
 }
 

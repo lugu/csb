@@ -7,10 +7,8 @@ object RunSimulation extends App {
 object Simulation {
 
   def fitness(player: Player): Int = {
-    def checkpoints = List(Point(5655,-2567), Point(4093,-7460), Point(13488,-2344), Point(12948,-7255))
-    def laps = 3
     def judge = JudgeSimulation()
-    def race: Race = new Race(checkpoints, laps)
+    def race: Race = Race.random
     def game(player: Player): Game = Game(race, player, player, judge, 0)
 
     game(player).play.step

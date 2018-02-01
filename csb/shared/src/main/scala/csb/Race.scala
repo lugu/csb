@@ -344,9 +344,9 @@ object Race {
     def filterCheckpoints(n: Int, stream: Stream[Point]): Stream[Point] = if (n == 0) stream
       else Stream.cons(stream.head,
         filterCheckpoints(n - 1, stream.tail.filter(p => p.distanceTo(stream.head) > checkpointsMinDistance)))
-    def checkpoints: List[Point] = filterCheckpoints(checkpointsNb, randomPositions).take(checkpointsNb).toList
+    def checkpoints: List[Point] = filterCheckpoints(checkpointsNb + 1, randomPositions).take(checkpointsNb).toList
 
-    def laps = Random.nextInt(6)
+    def laps = 3 + Random.nextInt(3)
     Race(checkpoints, laps)
   }
 

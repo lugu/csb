@@ -98,7 +98,7 @@ case class Pod(
 
     // fx and fy are the components of the impact vector. product is just there for optimisation purposes
     val product = n.x*dv.x + n.y*dv.y
-    val f = n * (product / nxnysquare * mcoeff)
+    val f = n * (product / (nxnysquare * mcoeff))
 
     // We apply the impact vector once
     val newSpeed = speed - (f * (1.0 / m1))
@@ -112,8 +112,6 @@ case class Pod(
     val newNewSpeed = newSpeed - (f * (1.0 / m1))
     val newOtherNewSpeed = otherNewSpeed + (f * ( 1.0 / m2))
 
-    // This is one of the rare places where a Vector class would have made the code more readable.
-    // But this place is called so often that I can't pay a performance price to make it more readable.
     // Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
     Pod(position, destinations, orientation, newSpeed, boostAvailable, hasShield)
   }

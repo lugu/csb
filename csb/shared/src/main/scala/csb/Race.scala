@@ -77,6 +77,8 @@ case class Pod(
         // Time needed to reach the impact point
         val t = pdist2 / length;
 
+        assert(t >= 0)
+        assert(t <= 1.0)
         return Some(t)
     }
     return None
@@ -296,27 +298,33 @@ case class Race (
   }
 
   def simulate(commands: List[Command]): Race =
-    simulateCommands(commands).simulateCollision
+    simulateCommands(commands).simulateCollision.simulateEndOfTurn
+
+  def simulateEndOfTurn = Race(pods.map(_.updateEnd), checkpoints, laps)
 
   def simulateCommands(commands: List[Command]): Race = {
     val p = pods.zip(commands).map {
       case (pod: Pod, c: Command) ⇒
-        pod.update(c)
+        pod.updateSpeed(c)
     }
     Race(p, checkpoints, laps)
   }
 
   def simulateCollision: Race = {
+    case class Collision(pod: Pod, time: Double)
+    case class Motion(pod: Pod, time: Double)
     val p = pods.map(pod => {
-      val collisions: List[Tuple2[Pod,Double]] = pods.filter(p => p != pod).flatMap{ other =>
-        val collision: Option[Tuple2[Pod,Double]] = pod.collisionTime(other).map(t => (other, t))
-        collision
+      val collisions: List[Collision] = pods.filter(p => p != pod).flatMap{
+        other => pod.collisionTime(other).map(t => Collision(other, t))
       }
-      collisions.sortBy{ case (p: Pod, t: Double) => t }.map{
-        case (p: Pod, t: Double) => p
-        }.foldLeft(pod){
-          case (p: Pod, other: Pod) => p.bounce(other)
+      val motion: Motion = collisions.sortBy(_.time)
+        .foldLeft(Motion(pod, 0.0)){
+          case (m: Motion, c: Collision) =>
+            // move the two pod up to the collision time, then
+            // compute the new speed due to the collision
+            Motion(m.pod.updatePosition(c.time - m.time).bounce(c.pod.updatePosition(c.time)), c.time)
         }
+      motion.pod.updatePosition(1.0 - motion.time)
     })
     Race(p, checkpoints, laps)
   }

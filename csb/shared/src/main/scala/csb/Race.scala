@@ -318,20 +318,24 @@ case class Race (
 
 object Race {
 
-
   def random: Race = {
     import scala.util.Random
-
-    val width = 16000
-    val margin = 400
-    val height = 9000
+    def width = 16000
+    def margin = 1000
+    def height = 9000
+    def checkpointsMinDistance = 4000
     def randomWidth = margin + Random.nextInt(width - 2 * margin)
     def randomHeight = margin + Random.nextInt(height - 2 * margin)
     def randomPosition = Point(randomWidth, - randomHeight)
-    val laps = Random.nextInt(6)
-    val checkpointsNb = 3 + Random.nextInt(2)
-    val checkpoints = (1 to checkpointsNb).map(i => randomPosition)
-    Race(checkpoints.toList, laps)
+    def randomPositions: Stream[Point] = Stream.continually(randomPosition)
+    def checkpointsNb = 3 + Random.nextInt(3)
+    def filterCheckpoints(n: Int, stream: Stream[Point]): Stream[Point] = if (n == 0) stream
+      else Stream.cons(stream.head,
+        filterCheckpoints(n - 1, stream.tail.filter(p => p.distanceTo(stream.head) > checkpointsMinDistance)))
+    def checkpoints: List[Point] = filterCheckpoints(checkpointsNb, randomPositions).take(checkpointsNb).toList
+
+    def laps = Random.nextInt(6)
+    Race(checkpoints, laps)
   }
 
   def parseInput(input: Stream[String]): Race = {

@@ -128,12 +128,12 @@ object Application {
 
   @JSExportTopLevel("csb.Application.main")
   def main(canvas: html.Canvas): Unit = {
-    val game = demoGame
+    val game = randomGame
     // val game = csb.races.RaceRecord2.game
     Board(game).play()
   }
 
-  def demoGame = {
+  def randomGame = {
     val playerA = new MetaPlayer(DefaultConfig)
     val playerB = new MetaPlayer(BetterConfig)
     val judge = JudgeSimulation()

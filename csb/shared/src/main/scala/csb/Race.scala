@@ -172,10 +172,16 @@ case class Pod(
   def hasFinished: Boolean = destinations.isEmpty
   def score = destinations.length
 
+  def setPosition(newPos: Point) = Pod(newPos, destinations, orientation, speed, boostAvailable, hasShield)
+
   def updateDestination: Pod = if (hasReachDestination)
     Pod(position, destinations.tail, orientation, speed, boostAvailable) else this
 
-  def update(command: Command) = {
+  def updateEnd = Pod(position.round, destinations, orientation, (speed * 0.85).floor, boostAvailable, hasShield)
+  def updatePosition(time: Double) = setPosition(position + (speed * time)).updateDestination
+
+  def update(command: Command) = updateSpeed(command).updatePosition(1.0).updateEnd
+  def updateSpeed(command: Command) = {
     val thrust = if (command.thrust == Pilot.boost) {
       if (!boostAvailable) {
         Print(s"WARNING: BOOST is not available to $this ($command)" )
@@ -189,7 +195,7 @@ case class Pod(
     val newSpeed = speed + desiredOrientation * thrust
     val angle = Angle.fromDegree(math.round(desiredOrientation.angleToEast.degree))
     val newOrientation = Point(1, 0).rotate(-angle)
-    Pod((position + newSpeed).round, destinations, newOrientation, (newSpeed * 0.85).floor, hasBoost, hasShield).updateDestination
+    Pod(position, destinations, newOrientation, newSpeed, hasBoost, hasShield)
   }
 
   def updateWith(u: PodUpdate): Pod = {

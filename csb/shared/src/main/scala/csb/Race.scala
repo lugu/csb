@@ -244,6 +244,7 @@ case class Race (
   def isLastTurn = if (scoreMin <= checkpoints.size) true else false
 
   def winner: Option[Pod] = pods.find(_.hasFinished)
+  def winnerIsPlayerA: Boolean = myPods.exists(_.hasFinished)
   def isFinished = winner.isDefined
 
   def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {

@@ -25,13 +25,8 @@
 
 # Project
 
-## Status
-
-    - can display a race in the browser
-
 ## TODO
-    - replay online race in the browser
-    - simulation: handle collision
+    - bug: BetterConfig does not better in the browser
 
 # Resources
 

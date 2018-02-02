@@ -6,18 +6,38 @@ object RunSimulation extends App {
 
 object Simulation {
 
-  val races = for (i <- 1 to 10) yield Race.random
+  // meta parameters
+  val populationSize = 100
+  val selectionSize = 10
+  val numberOfGeneration = 10
+  val numberOfRaces = 40
+  val mutationRate = 0.1
+  val baseConfig = DefaultConfig
+
+  // 1. generate population
+  // 2. evaluate population fitness
+  // 3. repeat:
+  // 3.1. select best-fit individuals
+  // 3.2. breed new individuals through cross-over and mutations
+  // 3.3. evaluate fitness of new individuals (population)
+  // 3.4. replace less-fit population with new individuals
+
+  val races = for (i <- 1 to numberOfRaces) yield Race.random
   val judge = JudgeSimulation()
 
-  def fitness(player: Player): Int = {
+  val defaultPlayer = MetaPlayer(baseConfig)
 
-    races.map{ race => Game(race, player, player, judge, 0).play.step }.sum
+  // number of races winned against default player
+  def fitness(player: Player): Int = {
+    races.map{ race =>
+        if (Game(race, player, defaultPlayer, judge, 0).play.race.winnerIsPlayerA) 1 else 0
+    }.sum
   }
 
   def run() {
     Print("Default fitness: " + defaultIndividual.fitness)
     Print("Starting simulation.")
-    val leader = population(100).generation(3, 100).leader
+    val leader = population(populationSize).generation(numberOfGeneration, selectionSize).leader
     Print("Simulation completed.")
     Print("Config: " + leader.config.p)
   }
@@ -29,22 +49,27 @@ object Simulation {
     def this(config: Config) {
       this(config, MetaPlayer(config))
     }
-    def evolve = new Individual(config.randomize)
   }
 
   case class Population(p: Seq[Individual]) {
     def selectPopulation(take: Int): Population = {
-      Print("> " + p.sortBy(_.fitness).take(take).map(_.fitness).mkString(" "))
-      Population(p.sortBy(_.fitness).take(take))
+      Print("> " + p.sortBy(- _.fitness).take(take).map(_.fitness).mkString(" "))
+      Population(p.sortBy(- _.fitness).take(take))
     }
-    def resamplePopulation(size: Int): Population = {
-      import scala.util.Random
-      val newPopulation = Population(for (i <- 1 to (p.size - size)) yield p(Random.nextInt(p.size)))
-      Population(p ++ newPopulation.p).evolve
+
+    def pickRandomIndividual = p(scala.util.Random.nextInt(p.size))
+    def breedIndividual = {
+      val newConfig = pickRandomIndividual.config.mergeWith(pickRandomIndividual.config).mutate(mutationRate)
+        new Individual(newConfig)
     }
-    def evolve= Population(p.map(_.evolve))
+
+    def breedPopulation(expectedSize: Int): Population = {
+      val parList = (1 to (expectedSize - p.size)).par
+      val nextGeneration = parList.map(i => breedIndividual)
+      Population(p ++ nextGeneration.toSeq)
+    }
     def leader: Individual = selectPopulation(1).p.head
-    def nextGeneration(take: Int): Population = selectPopulation(take).resamplePopulation(p.size)
+    def nextGeneration(take: Int): Population = selectPopulation(take).breedPopulation(p.size)
 
     @scala.annotation.tailrec
     final def generation(n: Int, take: Int): Population = {
@@ -53,10 +78,11 @@ object Simulation {
     }
   }
 
-  def newIndividual = new Individual(DefaultConfig.randomize)
-  def defaultIndividual = new Individual(DefaultConfig)
+  def newIndividual = new Individual(baseConfig.randomize)
+  def defaultIndividual = new Individual(baseConfig)
   def population(size: Int): Population = {
-    val individuals = for (i <- 1 to (size - 1)) yield newIndividual
+    val parList = (1 to size).par
+    val individuals = parList.map(i => newIndividual).toList
     Population(defaultIndividual +: individuals)
   }
 }

@@ -10,23 +10,23 @@ class PlayerSpec extends FlatSpec with Matchers {
   def speed = Point(100, 0)
   def orientation = Point(1, 0)
   def checkpoints = List(Point(1, 0), Point(1, 1), Point(0, 1), Point(0, 0))
-  def pod = Pod(position, checkpoints, orientation, speed, true)
+  def pod = Pod(position, checkpoints, orientation, speed)
 
   "Pod" should "always be a Point" in {
       assert(pod.destination.isInstanceOf[Point])
   }
   
   it should "compute its angle to destination" in {
-    assert(Pod(position, checkpoints, orientation, speed, true).angleToDest == Degree(0))
-    assert(Pod(position, checkpoints, orientation.rotate(Degree(90)), speed, true).angleToDest == Degree(90))
-    assert(Pod(position, checkpoints, orientation.rotate(Degree(360-45)), speed, true).angleToDest == Degree(-45))
+    assert(Pod(position, checkpoints, orientation, speed).angleToDest == Degree(0))
+    assert(Pod(position, checkpoints, orientation.rotate(Degree(90)), speed).angleToDest == Degree(90))
+    assert(Pod(position, checkpoints, orientation.rotate(Degree(360-45)), speed).angleToDest == Degree(-45))
   }
 
   it should "compute its speed angle to destination" in {
-    assert(Pod(position, checkpoints, orientation, speed, true).speedAngleToDest == Degree(0))
-    val angle1 = Pod(position, checkpoints, orientation, speed.rotate(Degree(90)), true).speedAngleToDest.degree
+    assert(Pod(position, checkpoints, orientation, speed).speedAngleToDest == Degree(0))
+    val angle1 = Pod(position, checkpoints, orientation, speed.rotate(Degree(90))).speedAngleToDest.degree
     angle1 should equal (-90.0 +- 0.001)
-    val angle2 = Pod(position, checkpoints, orientation, speed.rotate(Degree(360-45)), true).speedAngleToDest.degree
+    val angle2 = Pod(position, checkpoints, orientation, speed.rotate(Degree(360-45))).speedAngleToDest.degree
     angle2 should equal (45.0 +- 0.001)
   }
 
@@ -36,13 +36,13 @@ class PlayerSpec extends FlatSpec with Matchers {
   }
 
   it should "compute accuratly its distance to another pod" in {
-    val podA = Pod(Point(0, 0), checkpoints, orientation, speed, true)
-    val podB = Pod(Point(1000, 0), checkpoints, orientation, speed, true)
+    val podA = Pod(Point(0, 0), checkpoints, orientation, speed)
+    val podB = Pod(Point(1000, 0), checkpoints, orientation, speed)
     assert(podA.distanceToPod(podB) == (1000 - 2 * 400))
   }
 
   it should "compute its next position based on its current speed" in {
-    val podA = Pod(position, checkpoints, orientation, Point(0, 0), true)
+    val podA = Pod(position, checkpoints, orientation, Point(0, 0))
     val command = Command(Point(1, 0), 0, "test")
     val commandA = Command(Point(1, 0), 100, "test")
     assert(pod.update(command).position == (pod.position + pod.speed))
@@ -116,28 +116,51 @@ class PlayerSpec extends FlatSpec with Matchers {
   }
 
   it should "compute the collision time" in {
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
-      Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0))
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
-      Pod(Point(400, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0))
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
-      Pod(Point(799, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0))
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0), true).collisionTime(
-      Pod(Point(800, 0), checkpoints, orientation, Point(0, 0), true)) == None)
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(200, 0), true).collisionTime(
-      Pod(Point(1000, 0), checkpoints, orientation, Point(0, 0), true)) == Some(1))
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0), true).collisionTime(
-      Pod(Point(1000, 0), checkpoints, orientation, Point(0, 0), true)) == Some(0.5))
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0), true).collisionTime(
-      Pod(Point(1000, 0), checkpoints, orientation, Point(400, 0), true)) == None)
-    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0), true).collisionTime(
-      Pod(Point(1000, 0), checkpoints, orientation, Point(100, 0), true)) == Some(2.0/3))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0)).collisionTime(
+      Pod(Point(0, 0), checkpoints, orientation, Point(0, 0))) == Some(0))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0)).collisionTime(
+      Pod(Point(400, 0), checkpoints, orientation, Point(0, 0))) == Some(0))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0)).collisionTime(
+      Pod(Point(799, 0), checkpoints, orientation, Point(0, 0))) == Some(0))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(0, 0)).collisionTime(
+      Pod(Point(800, 0), checkpoints, orientation, Point(0, 0))) == None)
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(200, 0)).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(0, 0))) == Some(1))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0)).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(0, 0))) == Some(0.5))
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0)).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(400, 0))) == None)
+    assert(Pod(Point(0, 0), checkpoints, orientation, Point(400, 0)).collisionTime(
+      Pod(Point(1000, 0), checkpoints, orientation, Point(100, 0))) == Some(2.0/3))
+  }
+
+  "Race" should "detect a winner and a looser" in {
+
+    val podL = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), 100, true, true)
+    val podW = Pod(Point(0, 0), List(), Point(0, 0), Point(0, 0))
+    val raceN = Race(List(pod, pod, pod, pod), checkpoints, 1)
+    val raceW = Race(List(pod, pod, pod, podW), checkpoints, 1)
+    val raceL = Race(List(pod, podL, pod, pod), checkpoints, 1)
+
+    assert(raceN.winner.isEmpty)
+    assert(raceN.looser.isEmpty)
+    assert(!raceN.winnerIsPlayerA)
+    assert(!raceN.inverted.winnerIsPlayerA)
+
+    assert(!raceW.winner.isEmpty)
+    assert(raceW.looser.isEmpty)
+    assert(!raceW.winnerIsPlayerA)
+    assert(raceW.inverted.winnerIsPlayerA)
+
+    assert(raceL.winner.isEmpty)
+    assert(!raceL.looser.isEmpty)
+    assert(!raceL.winnerIsPlayerA)
+    assert(raceL.inverted.winnerIsPlayerA)
   }
 
   "Race" should "be able to manage its checkpoints" in {
 
     val checkpoints = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
-    val pods = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)
     val race = Race(List(pod, pod, pod, pod), checkpoints, 1)
 
     assert(!race.checkpoints.isEmpty)
@@ -149,7 +172,7 @@ class PlayerSpec extends FlatSpec with Matchers {
 
   "RaceRecord" should "generate a Race at any step" in {
     val checkpoints = List(Point(0, 0), Point(1, 1) * 1000, Point(2, 2) * 1000, Point(3, 3) * 1000)
-    val pods = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0), true)
+    val pods = Pod(Point(0, 0), List(Point(0, 0)), Point(0, 0), Point(0, 0))
     val recorded = RaceRecord(1, checkpoints, List())
   }
 }

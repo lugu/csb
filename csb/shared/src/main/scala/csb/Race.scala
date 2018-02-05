@@ -9,17 +9,16 @@ case class Pod(
     val destinations:   List[Point],
     val orientation:    Point,
     val speed:          Point,
+    val steps:       Int,
     val boostAvailable: Boolean,
-    val hasShield: Boolean = false) {
-
-  def this(p: Point, d: List[Point], o: Point, s: Point) = this(p, d, o, s, true)
+    val hasShield: Boolean) {
 
   lazy val destination = if (destinations.isEmpty) position else destinations.head
   def angleToDest = orientation.radianWith(destination - position)
 
   def speedAngleToDest = speed.radianFrom(destinationDirection)
 
-  override def toString = s"Pod($position, List($destination), $orientation, $speed, $boostAvailable)"
+  override def toString = s"Pod($position, List($destination), $orientation, $speed, $steps, $boostAvailable, $hasShield)"
   def data = position.data ++ destination.data ++ orientation.data ++ speed.data ++ Array(0.0)
 
   def checkpointRadius = 600
@@ -112,8 +111,7 @@ case class Pod(
     val newNewSpeed = newSpeed - (f * (1.0 / m1))
     val newOtherNewSpeed = otherNewSpeed + (f * ( 1.0 / m2))
 
-    // Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
-    Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
+    Pod(position, destinations, orientation, newNewSpeed, steps, boostAvailable, hasShield)
   }
 
   def detectCollision(other: Pod) = detectPossibleCollision(other, 200)
@@ -170,14 +168,16 @@ case class Pod(
 
   def hasReachDestination: Boolean = !hasFinished && ((position - destination).norm <= checkpointRadius)
   def hasFinished: Boolean = destinations.isEmpty
+  def hasLost: Boolean = steps >= 100
+  def hasWin: Option[Boolean] = if (hasFinished) Some(true) else if (hasLost) Some(false) else None
   def score = destinations.length
 
-  def setPosition(newPos: Point) = Pod(newPos, destinations, orientation, speed, boostAvailable, hasShield)
+  def setPosition(newPos: Point) = Pod(newPos, destinations, orientation, speed, steps, boostAvailable, hasShield)
 
   def updateDestination: Pod = if (hasReachDestination)
-    Pod(position, destinations.tail, orientation, speed, boostAvailable) else this
+    Pod(position, destinations.tail, orientation, speed, 0, boostAvailable, hasShield) else this
 
-  def updateEnd = Pod(position.round, destinations, orientation, (speed * 0.85).floor, boostAvailable, hasShield)
+  def updateEnd = Pod(position.round, destinations, orientation, (speed * 0.85).floor, steps + 1, boostAvailable, hasShield)
   def updatePosition(time: Double) = setPosition(position + (speed * time)).updateDestination
 
   def update(command: Command) = updateSpeed(command).updatePosition(1.0).updateEnd
@@ -195,16 +195,18 @@ case class Pod(
     val newSpeed = speed + desiredOrientation * thrust
     val angle = Angle.fromDegree(math.round(desiredOrientation.angleToEast.degree))
     val newOrientation = Point(1, 0).rotate(-angle)
-    Pod(position, destinations, newOrientation, newSpeed, hasBoost, hasShield)
+    Pod(position, destinations, newOrientation, newSpeed, steps, hasBoost, hasShield)
   }
 
   def updateWith(u: PodUpdate): Pod = {
     val dests = if (u.destination == destination) destinations else destinations.tail
-    Pod(u.position, dests, u.orientation, u.speed, boostAvailable)
+    Pod(u.position, dests, u.orientation, u.speed, steps, boostAvailable, hasShield)
   }
 }
 
 object Pod {
+
+  def apply(p: Point, d: List[Point], o: Point, s: Point): Pod = new Pod(p, d, o, s, 0, true, false)
 
   def distanceToLine(linePoint: Point, lineDirection: Point, testPoint: Point): Double =
     List(linePoint, lineDirection, testPoint) match {
@@ -243,9 +245,16 @@ case class Race (
   def isFirstTurn = if (scoreMin >= checkpoints.size * (laps - 1)) true else false
   def isLastTurn = if (scoreMin <= checkpoints.size) true else false
 
+  def looser: Option[Pod] = pods.find(_.hasLost)
   def winner: Option[Pod] = pods.find(_.hasFinished)
-  def winnerIsPlayerA: Boolean = myPods.exists(_.hasFinished)
-  def isFinished = winner.isDefined
+  def winnerIsPlayerA: Boolean = winner match {
+    case Some(win) => myPods.exists(_ == win) 
+    case None => looser match {
+      case Some(los) => enemies.exists(_ == los)
+      case None => false
+    }
+  }
+  def isFinished = looser.isDefined || winner.isDefined 
 
   def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {
     case (target, index) ⇒ target == p
@@ -359,7 +368,7 @@ object Race {
       input.take(4).map{
         (line: String) => {
           val u = updater.parsePodUpdate(line)
-          Pod(u.position, destinations, (destinations.head - u.position).normalize, u.speed, true)
+          Pod(u.position, destinations, (destinations.head - u.position).normalize, u.speed)
         }
       }.toList
     }
@@ -380,7 +389,7 @@ object Race {
     val destinations = (for (i ← 0 to laps) yield checkpointsShift).flatten.toList
     val departLine = (checkpoints(1) - checkpoints(0)).rotate(Degree(90)).normalize
     val positions = List(1, 3, -1, -3).map(pos ⇒ checkpoints(0) + departLine * (pos * 450))
-    val pods = positions.map(p ⇒ Pod(p, destinations, (checkpoints(1) - p).normalize, Point(0, 0), true))
+    val pods = positions.map(p ⇒ Pod(p, destinations, (checkpoints(1) - p).normalize, Point(0, 0)))
     Race(pods, checkpoints, laps)
   }
 
@@ -388,7 +397,7 @@ object Race {
 
 
 case class PodUpdate(position: Point, destination: Point, orientation: Point, speed: Point) {
-  def pod: Pod = Pod(position, List(destination), orientation, speed, false)
+  def pod: Pod = Pod(position, List(destination), orientation, speed)
 }
 
 case class Record(pod: Pod, command: Option[Command]) {

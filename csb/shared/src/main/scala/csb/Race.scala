@@ -113,7 +113,7 @@ case class Pod(
     val newOtherNewSpeed = otherNewSpeed + (f * ( 1.0 / m2))
 
     // Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
-    Pod(position, destinations, orientation, newSpeed, boostAvailable, hasShield)
+    Pod(position, destinations, orientation, newNewSpeed, boostAvailable, hasShield)
   }
 
   def detectCollision(other: Pod) = detectPossibleCollision(other, 200)

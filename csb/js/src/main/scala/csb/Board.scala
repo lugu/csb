@@ -100,7 +100,12 @@ class Board(game: Game) {
       else head #:: Frame(game.step, actors) #:: Stream.empty
     } else {
       if (!game.isFinished) Frame(game.step, actors) #:: nextTurn.frames
-      else Frame(game.step, actors) #:: Stream.empty
+      else {
+        if (game.race.winnerIsPlayerA) Print("Player A wins")
+        else if (game.race.winnerIsPlayerB) Print("Player B wins")
+        else Print("Drawn race")
+        Frame(game.step, actors) #:: Stream.empty
+      }
     }
   }
 

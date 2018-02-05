@@ -244,6 +244,7 @@ case class Race (
 
   def looser: Option[Pod] = pods.find(_.hasLost)
   def winner: Option[Pod] = pods.find(_.hasFinished)
+  def winnerIsPlayerB: Boolean = inverted.winnerIsPlayerA
   def winnerIsPlayerA: Boolean = winner match {
     case Some(win) => myPods.exists(_ == win) 
     case None => looser match {

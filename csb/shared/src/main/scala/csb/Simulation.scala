@@ -28,7 +28,7 @@ object Simulation {
   val defaultPlayer = MetaPlayer(baseConfig)
 
   // use sum(-log(race.step)) to maximize
-  def fitness(player: Player): Double = races.map{ race => {
+  def computeFitness(player: Player): Double = races.map{ race => {
       val game = Game(race, player, defaultPlayer, judge, 0).play
       if (game.winnerIsPlayerA)
         - scala.math.log(game.step)
@@ -46,11 +46,12 @@ object Simulation {
 
   case class Individual(config: Config, fitness: Double) {
     def this(config: Config, player: Player) {
-      this(config, fitness(player))
+      this(config, computeFitness(player))
     }
     def this(config: Config) {
       this(config, MetaPlayer(config))
     }
+    def updateFitness = Individual(config, computeFitness(MetaPlayer(config)))
   }
 
   case class Population(p: Seq[Individual]) {
@@ -65,10 +66,11 @@ object Simulation {
         new Individual(newConfig)
     }
 
+    def updateFitness: Population = Population(p.map(_.updateFitness))
     def breedPopulation(expectedSize: Int): Population = {
       val parList = (1 to (expectedSize - p.size)).par
       val nextGeneration = parList.map(i => breedIndividual)
-      Population(p ++ nextGeneration.toSeq)
+      Population(updateFitness.p ++ nextGeneration.toSeq)
     }
     def leader: Individual = selectPopulation(1).p.head
     def nextGeneration(take: Int): Population = selectPopulation(take).breedPopulation(p.size)

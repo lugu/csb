@@ -102,8 +102,10 @@ class Board(game: Game) {
     } else {
       if (!game.isFinished) Frame(game.step, actors) #:: nextTurn.frames
       else {
-        if (game.race.winnerIsPlayerA) Print("Player A wins: " + game.playerA.name)
-        else if (game.race.winnerIsPlayerB) Print("Player B wins: " + game.playerB.name)
+        if (game.race.winnerIsPlayerA)
+          Print("Player A wins: " + game.playerA.name)
+        else if (game.race.winnerIsPlayerB)
+          Print("Player B wins: " + game.playerB.name)
         else Print("Drawn race")
         Frame(game.step, actors) #:: Stream.empty
       }

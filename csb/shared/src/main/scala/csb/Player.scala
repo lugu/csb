@@ -41,6 +41,10 @@ case class Config(val p: Map[String,Int]) {
     Config(n)
   }
   def randomize: Config = mutate(0.1)
+
+  override def toString: String = "Config(Map(" +
+    p.map{ case (k, v) => "\"" + k + "\"" + s" -> $v"}.mkString(",\n") +
+    "))"
 }
 
 object DefaultConfig extends Config(Map(

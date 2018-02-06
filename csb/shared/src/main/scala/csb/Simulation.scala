@@ -41,7 +41,7 @@ object Simulation {
     Print("Starting simulation.")
     val leader = population(populationSize).generation(numberOfGeneration, selectionSize).leader
     Print("Simulation completed.")
-    Print("Config: " + leader.config.p)
+    Print(leader.config)
   }
 
   case class Individual(config: Config, fitness: Double) {

@@ -284,6 +284,8 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
 case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step: Int) {
   def winner(game: Game): Option[Pod] = game.race.winner
   def isFinished = judge.isFinished(this)
+  def winnerIsPlayerB: Boolean = race.winnerIsPlayerB
+  def winnerIsPlayerA: Boolean = race.winnerIsPlayerA
   def nextTurn: Game = {
     IO.debug()
     val isFinished = judge.isFinished(this)

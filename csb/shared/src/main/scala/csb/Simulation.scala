@@ -27,12 +27,14 @@ object Simulation {
 
   val defaultPlayer = MetaPlayer(baseConfig)
 
-  // number of races winned against default player
-  def fitness(player: Player): Int = {
-    races.map{ race =>
-        if (Game(race, player, defaultPlayer, judge, 0).play.race.winnerIsPlayerA) 1 else 0
-    }.sum
-  }
+  // use sum(-log(race.step)) to maximize
+  def fitness(player: Player): Double = races.map{ race => {
+      val game = Game(race, player, defaultPlayer, judge, 0).play
+      if (game.winnerIsPlayerA)
+        - scala.math.log(game.step)
+      else
+        - scala.math.log(3000)
+    }}.sum
 
   def run() {
     Print("Default fitness: " + defaultIndividual.fitness)
@@ -42,7 +44,7 @@ object Simulation {
     Print("Config: " + leader.config.p)
   }
 
-  case class Individual(config: Config, fitness: Int) {
+  case class Individual(config: Config, fitness: Double) {
     def this(config: Config, player: Player) {
       this(config, fitness(player))
     }

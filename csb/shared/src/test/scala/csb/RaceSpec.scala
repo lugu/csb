@@ -23,7 +23,7 @@ class RaceSpec extends FlatSpec with Matchers {
   def updatePosition(before: String, after: String, command: String) = {
     val updater = PodUpdater(dummyCheckpoints)
     val pod = updater.parsePodUpdate(before).pod
-    val computed = pod.update(new Command(command))
+    val computed = pod.update(new Move(command))
     val result = updater.parsePodUpdate(after).pod
 
     assert(computed.position == result.position, "in position test")

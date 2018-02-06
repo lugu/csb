@@ -119,7 +119,7 @@ trait RandomConfig {
 }
 
 trait Player {
-  def commands(race: Race): List[Command]
+  def commands(race: Race): List[Move]
 }
 
 trait PilotConstructor extends Player {
@@ -127,7 +127,7 @@ trait PilotConstructor extends Player {
 }
 
 trait SimplePlayer extends Player with PilotConstructor {
-  def commands(race: Race): List[Command] = {
+  def commands(race: Race): List[Move] = {
     val pilots: List[Pilot] = List(pilot(race.pod0, race), pilot(race.pod1, race))
     pilots.map(_.command)
   }
@@ -140,7 +140,7 @@ case class MetaPlayer(val config: Config) extends SimplePlayer {
 }
 
 case class RepeatPlayer(val player: Player, val output: (String) => Unit) extends Player {
-  def commands(race: Race): List[Command] = {
+  def commands(race: Race): List[Move] = {
     val c = player.commands(race)
     c.foreach(a => output(a.answer))
     c
@@ -148,25 +148,25 @@ case class RepeatPlayer(val player: Player, val output: (String) => Unit) extend
 }
 
 case class TestPlayer(var step: Int) extends Player {
-  def commands(race: Race): List[Command] = {
+  def commands(race: Race): List[Move] = {
     step += 1
-    if (step < 100) List(Command(Point(0, 100), 10, "before 1"), Command(Point(1000, 100), 10, "before 2"))
-    else List(Command(race.pod1.position, 100, "boom 1"), Command(Point(1000, 100), 10, "waiting 2"))
+    if (step < 100) List(Move(Point(0, 100), 10, "before 1"), Move(Point(1000, 100), 10, "before 2"))
+    else List(Move(race.pod1.position, 100, "boom 1"), Move(Point(1000, 100), 10, "waiting 2"))
   }
 }
 
 case class ReplayPlayer(var input: Stream[String]) extends Player {
   def command = {
-    val c = new Command(input.head)
+    val c = new Move(input.head)
     input = input.tail
     c
   }
-  def commands(race: Race): List[Command] = List(command, command)
+  def commands(race: Race): List[Move] = List(command, command)
 }
 
 case class DummyPlayer() extends Player {
-  def command(pos: Point) = Command(pos, 0, "dummy")
-  def commands(race: Race): List[Command] = List(command(race.pod0.position), command(race.pod1.position))
+  def command(pos: Point) = Move(pos, 0, "dummy")
+  def commands(race: Race): List[Move] = List(command(race.pod0.position), command(race.pod1.position))
 }
 
 object Print {
@@ -180,18 +180,18 @@ object Print {
 }
 
 trait Judge {
-  def judge(race: Race, commands: List[Command]): Race
+  def judge(race: Race, commands: List[Move]): Race
   def isFinished(game: Game): Boolean = if (game.step > 3000) true else game.race.isFinished
 }
 
 case class JudgeSimulation() extends Judge {
   override def isFinished(game: Game): Boolean = if (game.step > 1000) true else game.race.isFinished
-  def judge(race: Race, commands: List[Command]) = race.simulate(commands)
+  def judge(race: Race, commands: List[Move]) = race.simulate(commands)
 }
 
 case class JudgeReplay(var input: Stream[String]) extends Judge {
   override def isFinished(game: Game): Boolean = input.isEmpty
-  def judge(race: Race, commands: List[Command]): Race = input.headOption match {
+  def judge(race: Race, commands: List[Move]): Race = input.headOption match {
     case None => race
     case _ => {
       val updater = PodUpdater(race.checkpoints)
@@ -209,7 +209,7 @@ case class JudgeReplay(var input: Stream[String]) extends Judge {
 }
 
 case class JudgeRepeat(val input: () => Stream[String]) extends Judge {
-  def judge(race: Race, commands: List[Command]) = {
+  def judge(race: Race, commands: List[Move]) = {
     val updater = PodUpdater(race.checkpoints)
     val pods = input()
       .take(4)
@@ -267,11 +267,11 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
     input = input.drop(4)
     expected
   }
-  def computedPods(race: Race, commands: List[Command]): List[Pod] = {
+  def computedPods(race: Race, commands: List[Move]): List[Pod] = {
     race.simulate(commands).pods
   }
 
-  def judge(race: Race, commands: List[Command]): Race = input.headOption match {
+  def judge(race: Race, commands: List[Move]): Race = input.headOption match {
     case None => race
     case _ => {
       val solution = expectedPods(race)

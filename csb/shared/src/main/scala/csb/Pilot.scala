@@ -2,7 +2,7 @@ package csb
 
 import math.{ abs, min, max, sin, Pi }
 
-case class Command(direction: Point, thrust: Double, label: String) {
+case class Move(direction: Point, thrust: Double, label: String) {
   def this(args: Array[String]) {
     this(Point(args(0).toDouble, args(1).toDouble),
       if (args(2) == "BOOST") Pilot.boost
@@ -24,7 +24,7 @@ case class Command(direction: Point, thrust: Double, label: String) {
     // reverse Y coordinate as the input are non cartesian
     "" + x + " " + (-y) + " " + s + " " + s + " " + label
   }
-  override def toString = s"Command($direction,$thrust," + "\"" + label + "\")"
+  override def toString = s"Move($direction,$thrust," + "\"" + label + "\")"
   def data = direction.data ++ Array(thrust)
 }
 
@@ -32,7 +32,7 @@ trait Pilot {
   def direction: Point
   def thrust: Double
   def label: String
-  def command = Command(direction, thrust, label)
+  def command = Move(direction, thrust, label)
 }
 
 case class PilotManual(label: String, direction: Point, thrust: Double) extends Pilot

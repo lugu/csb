@@ -9,7 +9,7 @@ object Simulation {
   // meta parameters
   val populationSize = 100
   val selectionSize = 10
-  val numberOfGeneration = 10
+  val numberOfGeneration = 50
   val numberOfRaces = 40
   val mutationRate = 0.1
   val baseConfig = DefaultConfig

@@ -68,7 +68,7 @@ class Logger {
 }
 
 case class PlayerLogger(player: Player, logger: Logger) extends Player {
-  def commands(race: Race): List[Command] = {
+  def commands(race: Race): List[Move] = {
     logger.makeDefault()
     val c = player.commands(race)
     Logger.default.makeDefault()

@@ -180,8 +180,8 @@ case class Pod(
   def updateEnd = Pod(position.round, destinations, orientation, (speed * 0.85).floor, steps + 1, boostAvailable, hasShield)
   def updatePosition(time: Double) = setPosition(position + (speed * time)).updateDestination
 
-  def update(command: Command) = updateSpeed(command).updatePosition(1.0).updateEnd
-  def updateSpeed(command: Command): Pod = {
+  def update(command: Move) = updateSpeed(command).updatePosition(1.0).updateEnd
+  def updateSpeed(command: Move): Pod = {
     if (command.thrust == Pilot.boost && boostAvailable == false)
       return Pod(position, destinations, orientation, speed, 1000, boostAvailable, hasShield)
     val thrust = if (command.thrust == Pilot.boost) 650
@@ -305,14 +305,14 @@ case class Race (
     }
   }
 
-  def simulate(commands: List[Command]): Race =
-    simulateCommands(commands).simulateCollision.simulateEndOfTurn
+  def simulate(commands: List[Move]): Race =
+    simulateMoves(commands).simulateCollision.simulateEndOfTurn
 
   def simulateEndOfTurn = Race(pods.map(_.updateEnd), checkpoints, laps)
 
-  def simulateCommands(commands: List[Command]): Race = {
+  def simulateMoves(commands: List[Move]): Race = {
     val p = pods.zip(commands).map {
-      case (pod: Pod, c: Command) ⇒
+      case (pod: Pod, c: Move) ⇒
         pod.updateSpeed(c)
     }
     Race(p, checkpoints, laps)
@@ -400,7 +400,7 @@ case class PodUpdate(position: Point, destination: Point, orientation: Point, sp
   def pod: Pod = Pod(position, List(destination), orientation, speed)
 }
 
-case class Record(pod: Pod, command: Option[Command]) {
+case class Record(pod: Pod, command: Option[Move]) {
   override def toString = s"Record($pod, $command)"
 
   def data: Array[Double] = command match {
@@ -410,7 +410,7 @@ case class Record(pod: Pod, command: Option[Command]) {
 }
 
 case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Record]]) {
-    def updateWith(race: Race, commands: List[Option[Command]]) = {
+    def updateWith(race: Race, commands: List[Option[Move]]) = {
       val record = List(Record(race.pods(0), commands(0)), Record(race.pods(1), commands(1)),
                       Record(race.pods(2), commands(3)), Record(race.pods(3), commands(3)))
       RaceRecord(laps, checkpoints, steps ::: List(record))
@@ -424,7 +424,7 @@ case class RaceRecord(laps: Int, checkpoints: List[Point], steps: List[List[Reco
     }
 
     def step(i: Int): Race = Race(steps(i).map(_.pod).toList, checkpoints, laps)
-    def stepCommands(i: Int): List[Option[Command]] = steps(i).map(_.command).toList
+    def stepMoves(i: Int): List[Option[Move]] = steps(i).map(_.command).toList
 }
 
 case class PodUpdater(checkpoints: List[Point]) {

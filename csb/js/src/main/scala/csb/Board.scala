@@ -68,6 +68,7 @@ class Logger {
 }
 
 case class PlayerLogger(player: Player, logger: Logger) extends Player {
+  def name = player.name
   def commands(race: Race): List[Move] = {
     logger.makeDefault()
     val c = player.commands(race)
@@ -101,8 +102,8 @@ class Board(game: Game) {
     } else {
       if (!game.isFinished) Frame(game.step, actors) #:: nextTurn.frames
       else {
-        if (game.race.winnerIsPlayerA) Print("Player A wins")
-        else if (game.race.winnerIsPlayerB) Print("Player B wins")
+        if (game.race.winnerIsPlayerA) Print("Player A wins: " + game.playerA.name)
+        else if (game.race.winnerIsPlayerB) Print("Player B wins: " + game.playerB.name)
         else Print("Drawn race")
         Frame(game.step, actors) #:: Stream.empty
       }

@@ -1,7 +1,7 @@
 package csb
 import scala.util.Random
 
-case class Config(val p: Map[String,Int]) {
+case class Config(val name: String, val p: Map[String,Int]) {
   val maxSpeed = p("maxSpeed")
   val maxSpeedCorrected = p("maxSpeedCorrected")
   val minSpeedCorrected = p("minSpeedCorrected")
@@ -34,20 +34,20 @@ case class Config(val p: Map[String,Int]) {
   val maxSpeedPilot0 = p("maxSpeedPilot0")
 
   def mergeWith(other: Config): Config = {
-    Config(Map[String,Int]() ++ p.keys.map(k => (k, (p(k) + other.p(k)) / 2)))
+    Config(name + "/" + other.name, Map[String,Int]() ++ p.keys.map(k => (k, (p(k) + other.p(k)) / 2)))
   }
   def mutate(rate: Double): Config = {
     val n = p.mapValues(e => java.lang.Math.round(e + Random.nextGaussian() * e * rate).toInt)
-    Config(n)
+    Config(s"mutate($name, $rate)", n)
   }
   def randomize: Config = mutate(0.1)
 
-  override def toString: String = "Config(Map(" +
+  override def toString: String = s"Config($name, Map(" +
     p.map{ case (k, v) => "\"" + k + "\"" + s" -> $v"}.mkString(",\n") +
     "))"
 }
 
-object DefaultConfig extends Config(Map(
+object DefaultConfig extends Config("DefaultConfig", Map(
   "angleDenumPilot1" -> 4,
   "anglePilotAvoid" -> 90,
   "choosePilot1Distance" -> 5000,
@@ -79,7 +79,7 @@ object DefaultConfig extends Config(Map(
   "stepsToDestinationPilot2" -> 4
 ))
 
-object BetterConfig extends Config(Map(
+object BetterConfig extends Config("BetterConfig", Map(
   "angleDenumPilot1" -> 4,
   "anglePilotAvoid" -> 83,
   "choosePilot1Distance" -> 5159,
@@ -119,6 +119,7 @@ trait RandomConfig {
 }
 
 trait Player {
+  def name: String
   def commands(race: Race): List[Move]
 }
 
@@ -128,18 +129,21 @@ trait PilotConstructor extends Player {
 
 trait SimplePlayer extends Player with PilotConstructor {
   def commands(race: Race): List[Move] = {
+    Print(name)
     val pilots: List[Pilot] = List(pilot(race.pod0, race), pilot(race.pod1, race))
     pilots.map(_.command)
   }
 }
 
 case class MetaPlayer(val config: Config) extends SimplePlayer {
+  def name = config.name
   def pilot(pod: Pod, race: Race): Pilot = {
     MetaPilot(pod, race)(config)
   }
 }
 
 case class RepeatPlayer(val player: Player, val output: (String) => Unit) extends Player {
+  def name = "RepeatPlayer"
   def commands(race: Race): List[Move] = {
     val c = player.commands(race)
     c.foreach(a => output(a.answer))
@@ -148,6 +152,7 @@ case class RepeatPlayer(val player: Player, val output: (String) => Unit) extend
 }
 
 case class TestPlayer(var step: Int) extends Player {
+  def name = "TestPlayer"
   def commands(race: Race): List[Move] = {
     step += 1
     if (step < 100) List(Move(Point(0, 100), 10, "before 1"), Move(Point(1000, 100), 10, "before 2"))
@@ -156,6 +161,7 @@ case class TestPlayer(var step: Int) extends Player {
 }
 
 case class ReplayPlayer(var input: Stream[String]) extends Player {
+  def name = "ReplayPlayer"
   def command = {
     val c = new Move(input.head)
     input = input.tail
@@ -165,6 +171,7 @@ case class ReplayPlayer(var input: Stream[String]) extends Player {
 }
 
 case class DummyPlayer() extends Player {
+  def name = "DummyPlayer"
   def command(pos: Point) = Move(pos, 0, "dummy")
   def commands(race: Race): List[Move] = List(command(race.pod0.position), command(race.pod1.position))
 }

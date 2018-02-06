@@ -184,7 +184,9 @@ case class Pod(
   def updateSpeed(command: Command): Pod = {
     if (command.thrust == Pilot.boost && boostAvailable == false)
       return Pod(position, destinations, orientation, speed, 1000, boostAvailable, hasShield)
-    val thrust = if (command.thrust == Pilot.boost) 650 else if (command.thrust == Pilot.shield) 0 else command.thrust
+    val thrust = if (command.thrust == Pilot.boost) 650
+      else if (command.thrust == Pilot.shield) 0
+      else max(0, min(200, command.thrust))
     val hasBoost = if (command.thrust == Pilot.boost) false else boostAvailable
     val newShield = if (command.thrust == Pilot.shield) true else false
     val expectedOrientation = (command.direction - position).normalize

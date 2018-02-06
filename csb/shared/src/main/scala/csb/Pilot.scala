@@ -18,7 +18,7 @@ case class Command(direction: Point, thrust: Double, label: String) {
     val s = if (t == Pilot.boost) "BOOST"
     else if (t == Pilot.shield) "SHIELD"
     else if (t == Pilot.thrustMax) "200"
-    else t.toString
+    else max(0, min(200, t)).toString
     val x: Int = direction.x.round.toInt
     val y: Int = direction.y.round.toInt
     // reverse Y coordinate as the input are non cartesian

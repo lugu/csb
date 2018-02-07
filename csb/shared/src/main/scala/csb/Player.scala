@@ -162,7 +162,7 @@ trait PilotConstructor extends Player {
 
 trait SimplePlayer extends Player with PilotConstructor {
   def commands(race: Race): List[Move] = {
-    Print(name)
+    // Print(name)
     val pilots: List[Pilot] = List(pilot(race.pod0, race), pilot(race.pod1, race))
     pilots.map(_.command)
   }
@@ -225,7 +225,6 @@ trait Judge {
 }
 
 case class JudgeSimulation() extends Judge {
-  override def isFinished(game: Game): Boolean = if (game.step > 1000) true else game.race.isFinished
   def judge(race: Race, commands: List[Move]) = race.simulate(commands)
 }
 

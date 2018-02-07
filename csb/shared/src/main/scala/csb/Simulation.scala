@@ -21,22 +21,25 @@ object Simulation {
   // 3.2. breed new individuals through cross-over and mutations
   // 3.3. evaluate fitness of new individuals (population)
   // 3.4. replace less-fit population with new individuals
+  
+  var debug = false
 
   case class Challenge(races: Seq[Race]) {
-    // use sum(-log(race.step)) to maximize
-    def fitness(player: Player): Double = {
-      val games = races.map{ race => {
+    def debug(player: Player): Unit = {
+      val gameSeq = games(player)
+      val victories = gameSeq.count(g => g.winnerIsPlayerA)
+      val failures = gameSeq.count(g => g.winnerIsPlayerB)
+      val draw = numberOfRaces - victories - failures
+      Print(s"Victories: $victories")
+      Print(s"Failures: $failures" )
+      Print(s"Draw: $draw" )
+    }
+    def games(player: Player) = races.map{ race => {
         Game(race, player, defaultPlayer, judge, 0).play
       }}
-      if (debug) {
-        val victories = games.count(g => g.winnerIsPlayerA)
-        val failures = games.count(g => g.winnerIsPlayerB)
-        val draw = 40 - victories - failures
-        Print(s"Victories: $victories")
-        Print(s"Failures: $failures" )
-        Print(s"Draw: $draw" )
-      }
-      val score = games.map(g =>
+    // use sum(-log(race.step)) to maximize
+    def fitness(player: Player): Double = {
+      val score = games(player).map(g =>
       if (g.winnerIsPlayerA)
         - scala.math.log(g.step)
       else
@@ -48,11 +51,11 @@ object Simulation {
   def newChallenge = Challenge(for (i <- 1 to numberOfRaces) yield Race.random)
   val judge = JudgeSimulation()
 
-  val defaultPlayer = MetaPlayer(baseConfig)
+  val defaultPlayer = MetaPlayer(defaultConfig)
 
   def run() {
     Print("Starting simulation.")
-    val leader = population(populationSize).generation(numberOfGeneration, selectionSize).leader
+    val leader = population(populationSize).afterNGenerations(numberOfGeneration).leader
     Print("Simulation completed.")
     Print(leader.config)
   }
@@ -65,38 +68,45 @@ object Simulation {
       this(config, MetaPlayer(config))
     }
     def updateFitness(challenge: Challenge) = new Individual(config)(challenge)
+    def player = MetaPlayer(config)
   }
 
   case class Population(p: Seq[Individual]) {
+    def leader: Individual = p.sortBy(- _.fitness).head
+
+    def nextGeneration: Population = {
+      selectPopulation(selectionSize).breedPopulation(p.size)
+    }
+
+    // utils
+    def updateFitness(c: Challenge) = Population(p.map(_.updateFitness(c)))
+    def pickRandomIndividual = p(scala.util.Random.nextInt(p.size))
+    def breedIndividual(c: Challenge) = {
+      val newConfig = pickRandomIndividual.config.mergeWith(pickRandomIndividual.config).mutate(mutationRate)
+      new Individual(newConfig)(c)
+    }
+
+    // 1. select the best individuals
     def selectPopulation(take: Int): Population = {
       Print("> " + p.sortBy(- _.fitness).take(take).map(_.fitness).mkString(" "))
       Population(p.sortBy(- _.fitness).take(take))
     }
 
-    def pickRandomIndividual = p(scala.util.Random.nextInt(p.size))
-    def breedIndividual(c: Challenge) = {
-      val newConfig = pickRandomIndividual.config.mergeWith(pickRandomIndividual.config).mutate(mutationRate)
-        new Individual(newConfig)(c)
-    }
 
-    def updateFitness(c: Challenge) = Population(p.map(_.updateFitness(c)))
+    // 2. mix individuals
     def breedPopulation(expectedSize: Int): Population = {
       val challenge = newChallenge
       val parList = (1 to (expectedSize - p.size)).par
-      val nextGeneration = parList.map(i => breedIndividual(challenge))
-      val newPopulation = Population(updateFitness(challenge).p ++ nextGeneration.toSeq)
-      debug = true
-      newPopulation.leader.updateFitness(challenge)
-      debug = false
+      val newGeneration = parList.map(i => breedIndividual(challenge))
+      val newPopulation = Population(updateFitness(challenge).p ++ newGeneration.toSeq)
+      if (debug) challenge.debug(newPopulation.leader.player)
       newPopulation
     }
-    def leader: Individual = selectPopulation(1).p.head
-    def nextGeneration(take: Int): Population = selectPopulation(take).breedPopulation(p.size)
 
     @scala.annotation.tailrec
-    final def generation(n: Int, take: Int): Population = {
+    final def afterNGenerations(n: Int): Population = {
       Print(s"generation $n, best fitness: ${leader.fitness}")
-      if (n == 0) this else nextGeneration(take).generation(n - 1, take)
+      if (n == 0) this else nextGeneration.afterNGenerations(n - 1)
     }
   }
 

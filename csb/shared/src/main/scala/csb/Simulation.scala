@@ -24,13 +24,26 @@ object Simulation {
 
   case class Challenge(races: Seq[Race]) {
     // use sum(-log(race.step)) to maximize
-    def fitness(player: Player): Double = races.map{ race => {
-      val game = Game(race, player, defaultPlayer, judge, 0).play
-      if (game.winnerIsPlayerA)
-        - scala.math.log(game.step)
+    def fitness(player: Player): Double = {
+      val games = races.map{ race => {
+        Game(race, player, defaultPlayer, judge, 0).play
+      }}
+      if (debug) {
+        val victories = games.count(g => g.winnerIsPlayerA)
+        val failures = games.count(g => g.winnerIsPlayerB)
+        val draw = 40 - victories - failures
+        Print(s"Victories: $victories")
+        Print(s"Failures: $failures" )
+        Print(s"Draw: $draw" )
+      }
+      val score = games.map(g =>
+      if (g.winnerIsPlayerA)
+        - scala.math.log(g.step)
       else
-        - scala.math.log(3000)
-    }}.sum
+        - scala.math.log(10000)
+      ).sum
+      score
+    }
   }
   def newChallenge = Challenge(for (i <- 1 to numberOfRaces) yield Race.random)
   val judge = JudgeSimulation()
@@ -71,7 +84,11 @@ object Simulation {
       val challenge = newChallenge
       val parList = (1 to (expectedSize - p.size)).par
       val nextGeneration = parList.map(i => breedIndividual(challenge))
-      Population(updateFitness(challenge).p ++ nextGeneration.toSeq)
+      val newPopulation = Population(updateFitness(challenge).p ++ nextGeneration.toSeq)
+      debug = true
+      newPopulation.leader.updateFitness(challenge)
+      debug = false
+      newPopulation
     }
     def leader: Individual = selectPopulation(1).p.head
     def nextGeneration(take: Int): Population = selectPopulation(take).breedPopulation(p.size)

@@ -110,6 +110,39 @@ object BetterConfig extends Config("BetterConfig",
     "choosePilot1Distance" -> 5292,
     "minSpeedCorrected" -> 53))
 
+object BestConfig extends Config("BestConfig", 
+  Map("maxSpeedPilot0" -> 199,
+    "maxSpeedPilot1" -> 298,
+    "anglePilotAvoid" -> 95,
+    "maxSpeedCorrected" -> 242,
+    "skipSpeedPilot2" -> 256,
+    "minAngleCorrected" -> 78,
+    "smallAngleBoost" -> 18,
+    "skipAnglePilot2" -> 22,
+    "skipSpeed" -> 330,
+    "maxSpeedPilot2" -> 115,
+    "stepsToDestinationPilot2" -> 1,
+    "maxAngleCorrected" -> 16,
+    "speedFactorDenumCorrected" -> 10,
+    "skipAngle" -> 19,
+    "angleDenumPilot1" -> 2,
+    "reactionDistanceCorrected" -> 4957,
+    "skipDistance" -> 2771,
+    "longDistanceBoost" -> 3652,
+    "maxSpeedPilotAvoid" -> 141,
+    "maxSpeed" -> 220,
+    "speedPilotHit" -> 165,
+    "maxSpeedPilotWait" -> 334,
+    "speedFactorNumCorrected" -> 7,
+    "largeDistancePilotFight" -> 2150,
+    "ratioPilot1" -> 1,
+    "minSpeedOffsetCorrected" -> 234,
+    "smallDistancePilotWait" -> 3041,
+    "choosePilot1Distance" -> 6458,
+    "minSpeedCorrected" -> 50))
+
+
+
 trait Configurable {
   implicit val config = DefaultConfig
 }

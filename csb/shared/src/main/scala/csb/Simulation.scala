@@ -7,12 +7,13 @@ object RunSimulation extends App {
 object Simulation {
 
   // meta parameters
-  val populationSize = 200
+  val populationSize = 100
   val selectionSize = 10
   val numberOfGeneration = 10
   val numberOfRaces = 40
   val mutationRate = 0.1
   val baseConfig = DefaultConfig
+  val defaultConfig = DefaultConfig
 
   // 1. generate population
   // 2. evaluate population fitness
@@ -22,14 +23,14 @@ object Simulation {
   // 3.3. evaluate fitness of new individuals (population)
   // 3.4. replace less-fit population with new individuals
   
-  var debug = false
+  var debug = true
 
   case class Challenge(races: Seq[Race]) {
-    def debug(player: Player): Unit = {
-      val gameSeq = games(player)
+    def debug(player: Player, racesNb: Int): Unit = {
+      val gameSeq = Challenge(racesNb).games(player)
       val victories = gameSeq.count(g => g.winnerIsPlayerA)
       val failures = gameSeq.count(g => g.winnerIsPlayerB)
-      val draw = numberOfRaces - victories - failures
+      val draw = gameSeq.count(g => (!g.winnerIsPlayerA) && (!g.winnerIsPlayerB))
       Print(s"Victories: $victories")
       Print(s"Failures: $failures" )
       Print(s"Draw: $draw" )
@@ -48,6 +49,12 @@ object Simulation {
       score
     }
   }
+  object Challenge {
+    def apply(): Challenge = Challenge(numberOfRaces)
+    def apply(racesNb: Int): Challenge = Challenge(for (i <- 1 to racesNb) yield Race.random)
+  }
+
+
   def newChallenge = Challenge(for (i <- 1 to numberOfRaces) yield Race.random)
   val judge = JudgeSimulation()
 
@@ -72,7 +79,7 @@ object Simulation {
   }
 
   case class Population(p: Seq[Individual]) {
-    def leader: Individual = p.sortBy(- _.fitness).head
+    def leader: Individual = p.maxBy(_.fitness)
 
     def nextGeneration: Population = {
       selectPopulation(selectionSize).breedPopulation(p.size)
@@ -88,18 +95,19 @@ object Simulation {
 
     // 1. select the best individuals
     def selectPopulation(take: Int): Population = {
-      Print("> " + p.sortBy(- _.fitness).take(take).map(_.fitness).mkString(" "))
-      Population(p.sortBy(- _.fitness).take(take))
+      val pop = Population(p.sortBy(- _.fitness).take(take))
+      Print("> " + pop.p.map(_.fitness).mkString(" "))
+      pop
     }
 
 
     // 2. mix individuals
     def breedPopulation(expectedSize: Int): Population = {
-      val challenge = newChallenge
+      val challenge = Challenge(numberOfRaces)
       val parList = (1 to (expectedSize - p.size)).par
       val newGeneration = parList.map(i => breedIndividual(challenge))
       val newPopulation = Population(updateFitness(challenge).p ++ newGeneration.toSeq)
-      if (debug) challenge.debug(newPopulation.leader.player)
+      if (debug) challenge.debug(newPopulation.leader.player, 10)
       newPopulation
     }
 
@@ -113,7 +121,7 @@ object Simulation {
   def newIndividual(c: Challenge) = new Individual(baseConfig.randomize)(c)
   def defaultIndividual(c: Challenge) = new Individual(baseConfig)(c)
   def population(size: Int): Population = {
-    val challenge = newChallenge
+    val challenge = Challenge(numberOfRaces)
     val parList = (1 to size).par
     val individuals = parList.map(i => newIndividual(challenge)).toList
     Population(defaultIndividual(challenge) +: individuals)

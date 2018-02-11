@@ -224,7 +224,7 @@ trait Judge {
   def isFinished(game: Game): Boolean = if (game.step > 3000) true else game.race.isFinished
 }
 
-case class JudgeSimulation() extends Judge {
+object JudgeSimulation extends Judge {
   def judge(race: Race, commands: List[Move]) = race.simulate(commands)
 }
 

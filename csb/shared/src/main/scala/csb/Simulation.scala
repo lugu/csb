@@ -99,14 +99,14 @@ case class Population(p: Seq[Individual]) {
 // 3.2. breed new individuals through cross-over and mutations
 // 3.3. evaluate fitness of new individuals (population)
 // 3.4. replace less-fit population with new individuals
-case class Simulation(p: Population, e: Environment) {
+case class Experiment(p: Population, e: Environment) {
 
   def param = e.param
 
   def run() {
     Print("Starting simulation.")
     val leader = p.afterNGenerations(param.numberOfGeneration, e).leader
-    Print("Simulation completed.")
+    Print("Experiment completed.")
     Print(leader.config)
   }
 }
@@ -123,5 +123,5 @@ object Simulation extends App {
     val individuals = parList.map(i => newIndividual(environment)).toList
     Population(defaultIndividual(environment) +: individuals)
   }
-  (new Simulation(population(param.populationSize), environment)).run()
+  Experiment(population(param.populationSize), environment).run()
 }

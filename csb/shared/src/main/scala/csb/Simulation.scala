@@ -1,28 +1,16 @@
 package csb
 
-trait MetaParameter {
-  val populationSize: Int
-  val selectionSize: Int
-  val numberOfGeneration: Int
-  val numberOfRaces: Int
-  val mutationRate: Double
-  val baseConfig: Config
-  val defaultConfig: Config
-  lazy val defaultPlayer = MetaPlayer(defaultConfig)
-  val debug: Boolean
-}
-
-// meta parameters
-object Params extends MetaParameter {
-  val populationSize = 10
-  val selectionSize = 1
-  val numberOfGeneration = 10
-  val numberOfRaces = 10
-  val mutationRate = 0.1
-  val baseConfig = DefaultConfig
-  val defaultConfig = DefaultConfig
-  val debug = false
-}
+case class MetaParameter(
+  populationSize: Int,
+  selectionSize: Int,
+  numberOfGeneration: Int,
+  numberOfRaces: Int,
+  mutationRate: Double,
+  baseConfig: Config,
+  defaultConfig: Config,
+  val debug: Boolean) {
+    lazy val defaultPlayer = MetaPlayer(defaultConfig)
+  }
 
 case class Environment(param: MetaParameter, races: Seq[Race]) {
   def judge = JudgeSimulation
@@ -51,18 +39,20 @@ case class Environment(param: MetaParameter, races: Seq[Race]) {
 }
 
 object Environment {
-  def apply(racesNb: Int, param: MetaParameter): Environment = Environment(param, for (i <- 1 to racesNb) yield Race.random)
+  def apply(racesNb: Int, param: MetaParameter): Environment = {
+    Environment(param, for (i <- 1 to racesNb) yield Race.random)
+  }
 }
 
 case class Individual(config: Config, fitness: Double) {
-  def this(config: Config, player: Player, environment: Environment) {
-    this(config, environment.fitness(player))
-  }
-  def this(config: Config, environment: Environment) {
-    this(config, MetaPlayer(config), environment)
-  }
   def fitness(environment: Environment) = environment.fitness(player)
   def player = MetaPlayer(config)
+}
+
+object Individual {
+  def apply(config: Config, environment: Environment): Individual = {
+    Individual(config, environment.fitness(MetaPlayer(config)))
+  }
 }
 
 case class Population(p: Seq[Individual]) {
@@ -79,7 +69,7 @@ case class Population(p: Seq[Individual]) {
   }
   private def breedIndividual(e: Environment) = {
     val newConfig = randomIndividual.config.mergeWith(randomIndividual.config).mutate(e.param.mutationRate)
-    new Individual(newConfig, e)
+    Individual(newConfig, e)
   }
   def evolve(e: Environment): Population = {
     selectPopulation(e.param.selectionSize).breedPopulation(p.size, e)
@@ -103,13 +93,21 @@ case class Experiment(p: Population, e: Environment) {
 
 object Simulation extends App {
 
+  val param = MetaParameter(
+    populationSize = 10,
+    selectionSize = 1,
+    numberOfGeneration = 10,
+    numberOfRaces = 10,
+    mutationRate = 0.1,
+    baseConfig = DefaultConfig,
+    defaultConfig = DefaultConfig,
+    debug = false)
 
-  val param: MetaParameter = Params
   val environment = Environment(param.numberOfRaces, param)
 
   def population(size: Int): Population = {
-    def newIndividual(e: Environment) = new Individual(param.baseConfig.randomize, e)
-    def defaultIndividual(e: Environment) = new Individual(param.baseConfig, e)
+    def newIndividual(e: Environment) = Individual(param.baseConfig.randomize, e)
+    def defaultIndividual(e: Environment) = Individual(param.baseConfig, e)
     val parList = (1 to size).par
     val individuals = parList.map(i => newIndividual(environment)).toList
     Population(defaultIndividual(environment) +: individuals)

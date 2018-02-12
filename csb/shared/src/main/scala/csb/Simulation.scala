@@ -4,7 +4,8 @@ case class MetaParameter(
   populationSize: Int,
   selectionSize: Int,
   numberOfGeneration: Int,
-  numberOfRaces: Int,
+  trainRacesNb: Int,
+  testRacesNb: Int,
   mutationRate: Double,
   baseConfig: Config,
   defaultConfig: Config,
@@ -26,15 +27,14 @@ case class Environment(param: MetaParameter, races: Seq[Race]) {
   def games(player: Player) = races.map{ race => {
     Game(race, player, param.defaultPlayer, judge, 0).play
   }}
-  // use sum(-log(race.step)) to maximize
   def fitness(player: Player): Double = {
-    val score = games(player).map(g =>
+    // use sum(-log(race.step)) to maximize
+    games(player).map(g =>
         if (g.winnerIsPlayerA)
-          - scala.math.log(g.step)
+          -scala.math.log(g.step)
         else
-          - scala.math.log(10000)
+          -scala.math.log(10000)
         ).sum
-    score
   }
 }
 
@@ -71,6 +71,10 @@ case class Population(p: Seq[Individual]) {
     val newConfig = randomIndividual.config.mergeWith(randomIndividual.config).mutate(e.param.mutationRate)
     Individual(newConfig, e)
   }
+
+  // 1. select best-fit individuals
+  // 2. breed new individuals through cross-over and mutations
+  // 3. evaluate fitness of new individuals (population)
   def evolve(e: Environment): Population = {
     selectPopulation(e.param.selectionSize).breedPopulation(p.size, e)
   }
@@ -78,43 +82,50 @@ case class Population(p: Seq[Individual]) {
   def fitness(e: Environment): Double = leader.fitness(e)
 }
 
-// 1. generate population
-// 2. evaluate population fitness
-// 3. repeat:
-// 3.1. select best-fit individuals
-// 3.2. breed new individuals through cross-over and mutations
-// 3.3. evaluate fitness of new individuals (population)
-// 3.4. replace less-fit population with new individuals
 case class Experiment(p: Population, e: Environment) {
   def evolve: Population = p.evolve(e)
-  def run: Stream[Population] = Stream.continually(evolve)
+  def generations: Stream[Population] = Stream.continually(evolve).take(e.param.numberOfGeneration)
   def fitness: Double = p.fitness(e)
 }
 
+case class Simulation(population: Population, trainEnv: Environment, testEnv: Environment) {
+  def run = {
+    val generations: Stream[Population] = Experiment(population, trainEnv).generations
+    Print(generations.last.leader.config)
+    Print("training fitness:")
+    generations.foreach(p => Print(p.fitness(trainEnv).toString))
+    Print("test fitness:")
+    generations.foreach(p => Print(p.fitness(testEnv).toString))
+  }
+}
+
 object Simulation extends App {
+
+  def apply(param: MetaParameter): Simulation = {
+    val trainEnv = Environment(param.trainRacesNb, param)
+    val testEnv = Environment(param.testRacesNb, param)
+
+    def population: Population = {
+      def newIndividual(e: Environment) = Individual(param.baseConfig.randomize, e)
+      def defaultIndividual(e: Environment) = Individual(param.baseConfig, e)
+      val parList = (1 to param.populationSize).par
+      val individuals = parList.map(i => newIndividual(trainEnv)).toList
+      Population(defaultIndividual(trainEnv) +: individuals)
+    }
+
+    Simulation(population, trainEnv, testEnv)
+  }
 
   val param = MetaParameter(
     populationSize = 10,
     selectionSize = 1,
     numberOfGeneration = 10,
-    numberOfRaces = 10,
+    trainRacesNb = 10,
+    testRacesNb = 10,
     mutationRate = 0.1,
     baseConfig = DefaultConfig,
     defaultConfig = DefaultConfig,
     debug = false)
 
-  val environment = Environment(param.numberOfRaces, param)
-
-  def population(size: Int): Population = {
-    def newIndividual(e: Environment) = Individual(param.baseConfig.randomize, e)
-    def defaultIndividual(e: Environment) = Individual(param.baseConfig, e)
-    val parList = (1 to size).par
-    val individuals = parList.map(i => newIndividual(environment)).toList
-    Population(defaultIndividual(environment) +: individuals)
-  }
-
-  Print("Starting simulation.")
-  val leader = Experiment(population(param.populationSize), environment).run.take(param.numberOfGeneration).last.leader
-  Print("Experiment completed.")
-  Print(leader.config)
+  Simulation(param).run
 }

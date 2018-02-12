@@ -24,10 +24,10 @@ object Params extends MetaParameter {
   val debug = false
 }
 
-case class Challenge(param: MetaParameter, races: Seq[Race]) {
+case class Environment(param: MetaParameter, races: Seq[Race]) {
   def judge = JudgeSimulation
   def debug(player: Player, racesNb: Int): Unit = {
-    val gameSeq = Challenge(racesNb, param).games(player)
+    val gameSeq = Environment(racesNb, param).games(player)
     val victories = gameSeq.count(g => g.winnerIsPlayerA)
     val failures = gameSeq.count(g => g.winnerIsPlayerB)
     val draw = gameSeq.count(g => (!g.winnerIsPlayerA) && (!g.winnerIsPlayerB))
@@ -50,18 +50,18 @@ case class Challenge(param: MetaParameter, races: Seq[Race]) {
   }
 }
 
-object Challenge {
-  def apply(racesNb: Int, param: MetaParameter): Challenge = Challenge(param, for (i <- 1 to racesNb) yield Race.random)
+object Environment {
+  def apply(racesNb: Int, param: MetaParameter): Environment = Environment(param, for (i <- 1 to racesNb) yield Race.random)
 }
 
 case class Individual(config: Config, fitness: Double) {
-  def this(config: Config, player: Player, challenge: Challenge) {
-    this(config, challenge.fitness(player))
+  def this(config: Config, player: Player, environment: Environment) {
+    this(config, environment.fitness(player))
   }
-  def this(config: Config, challenge: Challenge) {
-    this(config, MetaPlayer(config), challenge)
+  def this(config: Config, environment: Environment) {
+    this(config, MetaPlayer(config), environment)
   }
-  def updateFitness(challenge: Challenge) = new Individual(config, challenge)
+  def updateFitness(environment: Environment) = new Individual(config, environment)
   def player = MetaPlayer(config)
 }
 
@@ -69,26 +69,26 @@ case class Population(p: Seq[Individual]) {
   def leader: Individual = p.maxBy(_.fitness)
   def selectPopulation(take: Int): Population = Population(p.sortBy(- _.fitness).take(take))
   def pickRandomIndividual = p(scala.util.Random.nextInt(p.size))
-  def updateFitness(c: Challenge) = Population(p.map(_.updateFitness(c)))
-  def breedPopulation(expectedSize: Int, c: Challenge): Population = {
+  def updateFitness(e: Environment) = Population(p.map(_.updateFitness(e)))
+  def breedPopulation(expectedSize: Int, e: Environment): Population = {
     val parList = (1 to (expectedSize - p.size)).par
-    val newGeneration = parList.map(i => breedIndividual(c))
-    val newPopulation = Population(updateFitness(c).p ++ newGeneration.toSeq)
-    if (c.param.debug) c.debug(newPopulation.leader.player, 10)
+    val newGeneration = parList.map(i => breedIndividual(e))
+    val newPopulation = Population(updateFitness(e).p ++ newGeneration.toSeq)
+    if (e.param.debug) e.debug(newPopulation.leader.player, 10)
     newPopulation
   }
-  def breedIndividual(c: Challenge) = {
-    val newConfig = pickRandomIndividual.config.mergeWith(pickRandomIndividual.config).mutate(c.param.mutationRate)
-    new Individual(newConfig, c)
+  def breedIndividual(e: Environment) = {
+    val newConfig = pickRandomIndividual.config.mergeWith(pickRandomIndividual.config).mutate(e.param.mutationRate)
+    new Individual(newConfig, e)
   }
-  def nextGeneration(c: Challenge): Population = {
-    selectPopulation(c.param.selectionSize).breedPopulation(p.size, c)
+  def nextGeneration(e: Environment): Population = {
+    selectPopulation(e.param.selectionSize).breedPopulation(p.size, e)
   }
 
   @scala.annotation.tailrec
-  final def afterNGenerations(n: Int, c: Challenge): Population = {
+  final def afterNGenerations(n: Int, e: Environment): Population = {
     Print(s"generation $n, best fitness: ${leader.fitness}")
-    if (n == 0) this else nextGeneration(c).afterNGenerations(n - 1, c)
+    if (n == 0) this else nextGeneration(e).afterNGenerations(n - 1, e)
   }
 }
 
@@ -99,13 +99,13 @@ case class Population(p: Seq[Individual]) {
 // 3.2. breed new individuals through cross-over and mutations
 // 3.3. evaluate fitness of new individuals (population)
 // 3.4. replace less-fit population with new individuals
-case class Simulation(p: Population, c: Challenge) {
+case class Simulation(p: Population, e: Environment) {
 
-  def param = c.param
+  def param = e.param
 
   def run() {
     Print("Starting simulation.")
-    val leader = p.afterNGenerations(param.numberOfGeneration, c).leader
+    val leader = p.afterNGenerations(param.numberOfGeneration, e).leader
     Print("Simulation completed.")
     Print(leader.config)
   }
@@ -114,14 +114,14 @@ case class Simulation(p: Population, c: Challenge) {
 object Simulation extends App {
 
   val param: MetaParameter = Params
-  val challenge = Challenge(param.numberOfRaces, param)
+  val environment = Environment(param.numberOfRaces, param)
 
   def population(size: Int): Population = {
-    def newIndividual(c: Challenge) = new Individual(param.baseConfig.randomize, c)
-    def defaultIndividual(c: Challenge) = new Individual(param.baseConfig, c)
+    def newIndividual(e: Environment) = new Individual(param.baseConfig.randomize, e)
+    def defaultIndividual(e: Environment) = new Individual(param.baseConfig, e)
     val parList = (1 to size).par
-    val individuals = parList.map(i => newIndividual(challenge)).toList
-    Population(defaultIndividual(challenge) +: individuals)
+    val individuals = parList.map(i => newIndividual(environment)).toList
+    Population(defaultIndividual(environment) +: individuals)
   }
-  (new Simulation(population(param.populationSize), challenge)).run()
+  (new Simulation(population(param.populationSize), environment)).run()
 }

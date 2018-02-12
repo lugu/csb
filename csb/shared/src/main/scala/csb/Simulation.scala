@@ -61,35 +61,31 @@ case class Individual(config: Config, fitness: Double) {
   def this(config: Config, environment: Environment) {
     this(config, MetaPlayer(config), environment)
   }
-  def updateFitness(environment: Environment) = new Individual(config, environment)
+  def fitness(environment: Environment) = environment.fitness(player)
   def player = MetaPlayer(config)
 }
 
 case class Population(p: Seq[Individual]) {
   def leader: Individual = p.maxBy(_.fitness)
-  def selectPopulation(take: Int): Population = Population(p.sortBy(- _.fitness).take(take))
-  def pickRandomIndividual = p(scala.util.Random.nextInt(p.size))
-  def updateFitness(e: Environment) = Population(p.map(_.updateFitness(e)))
-  def breedPopulation(expectedSize: Int, e: Environment): Population = {
+  private def selectPopulation(take: Int): Population = Population(p.sortBy(- _.fitness).take(take))
+  private def randomIndividual = p(scala.util.Random.nextInt(p.size))
+  private def updateFitness(e: Environment) = Population(p.map(i => Individual(i.config, i.fitness(e))))
+  private def breedPopulation(expectedSize: Int, e: Environment): Population = {
     val parList = (1 to (expectedSize - p.size)).par
     val newGeneration = parList.map(i => breedIndividual(e))
     val newPopulation = Population(updateFitness(e).p ++ newGeneration.toSeq)
     if (e.param.debug) e.debug(newPopulation.leader.player, 10)
     newPopulation
   }
-  def breedIndividual(e: Environment) = {
-    val newConfig = pickRandomIndividual.config.mergeWith(pickRandomIndividual.config).mutate(e.param.mutationRate)
+  private def breedIndividual(e: Environment) = {
+    val newConfig = randomIndividual.config.mergeWith(randomIndividual.config).mutate(e.param.mutationRate)
     new Individual(newConfig, e)
   }
-  def nextGeneration(e: Environment): Population = {
+  def evolve(e: Environment): Population = {
     selectPopulation(e.param.selectionSize).breedPopulation(p.size, e)
   }
 
-  @scala.annotation.tailrec
-  final def afterNGenerations(n: Int, e: Environment): Population = {
-    Print(s"generation $n, best fitness: ${leader.fitness}")
-    if (n == 0) this else nextGeneration(e).afterNGenerations(n - 1, e)
-  }
+  def fitness(e: Environment): Double = leader.fitness(e)
 }
 
 // 1. generate population
@@ -100,18 +96,13 @@ case class Population(p: Seq[Individual]) {
 // 3.3. evaluate fitness of new individuals (population)
 // 3.4. replace less-fit population with new individuals
 case class Experiment(p: Population, e: Environment) {
-
-  def param = e.param
-
-  def run() {
-    Print("Starting simulation.")
-    val leader = p.afterNGenerations(param.numberOfGeneration, e).leader
-    Print("Experiment completed.")
-    Print(leader.config)
-  }
+  def evolve: Population = p.evolve(e)
+  def run: Stream[Population] = Stream.continually(evolve)
+  def fitness: Double = p.fitness(e)
 }
 
 object Simulation extends App {
+
 
   val param: MetaParameter = Params
   val environment = Environment(param.numberOfRaces, param)
@@ -123,5 +114,9 @@ object Simulation extends App {
     val individuals = parList.map(i => newIndividual(environment)).toList
     Population(defaultIndividual(environment) +: individuals)
   }
-  Experiment(population(param.populationSize), environment).run()
+
+  Print("Starting simulation.")
+  val leader = Experiment(population(param.populationSize), environment).run.take(param.numberOfGeneration).last.leader
+  Print("Experiment completed.")
+  Print(leader.config)
 }

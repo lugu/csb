@@ -87,7 +87,11 @@ case class Population(p: Seq[Individual]) {
 
 case class Experiment(p: Population, e: Environment) {
   def evolve: Population = p.evolve(e)
-  def generations: Stream[Population] = Stream.continually(evolve).take(e.param.numberOfGeneration)
+  def stream: Stream[Population] = {
+    val next = evolve
+    Stream.cons(next, Experiment(next, e).stream)
+  }
+  def generations: Stream[Population] = stream.take(e.param.numberOfGeneration)
   def fitness: Double = p.fitness(e)
 }
 

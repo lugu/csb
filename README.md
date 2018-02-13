@@ -15,7 +15,7 @@
 
 ## Run simulation:
 
-    sbt "csbNative/runMain csb.RunSimulation"
+    sbt "csbNative/runMain csb.Simulation"
 
 ## Generate target/Player.scala for the online competition:
 

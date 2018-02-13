@@ -98,12 +98,16 @@ case class Experiment(p: Population, e: Environment) {
 }
 
 case class Simulation(population: Population, trainEnv: Environment, testEnv: Environment) {
+  def printFitness(t0: Long, p: Population) {
+    val t1 = System.nanoTime() - t0
+    val trainFitness = p.fitness(trainEnv)
+    val testFitness = p.fitness(testEnv)
+    Print(s"$t1 $trainFitness $testFitness")
+  }
   def run = {
+    val t0 = System.nanoTime()
     val generations: Stream[Population] = Experiment(population, trainEnv).generations
-    Print("training fitness:")
-    generations.foreach(p => Print(p.fitness(trainEnv).toString))
-    Print("test fitness:")
-    generations.foreach(p => Print(p.fitness(testEnv).toString))
+    generations.foreach(p => printFitness(t0, p))
     Print(generations.last.leader.config)
   }
 }

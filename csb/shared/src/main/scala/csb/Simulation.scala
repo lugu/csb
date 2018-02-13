@@ -9,7 +9,8 @@ case class MetaParameter(
   mutationRate: Double,
   baseConfig: Config,
   defaultConfig: Config,
-  val debug: Boolean) {
+  notRandom: Boolean,
+  debug: Boolean) {
     lazy val defaultPlayer = MetaPlayer(defaultConfig)
   }
 
@@ -64,7 +65,8 @@ case class Population(p: Seq[Individual]) {
   private def randomIndividual = p(scala.util.Random.nextInt(p.size))
   private def updateFitness(e: Environment) = Population(p.map(i => Individual(i.config, i.fitness(e))))
   private def breedPopulation(expectedSize: Int, e: Environment): Population = {
-    val parList = (1 to (expectedSize - p.size)).par
+    val list = (1 to (expectedSize - p.size))
+    val parList = if (e.param.notRandom) list else list.par
     val newGeneration = parList.map(i => breedIndividual(e))
     val newPopulation = Population(updateFitness(e).p ++ newGeneration.toSeq)
     if (e.param.debug) e.debug(newPopulation.leader.player, 10)
@@ -98,11 +100,11 @@ case class Experiment(p: Population, e: Environment) {
 case class Simulation(population: Population, trainEnv: Environment, testEnv: Environment) {
   def run = {
     val generations: Stream[Population] = Experiment(population, trainEnv).generations
-    Print(generations.last.leader.config)
     Print("training fitness:")
     generations.foreach(p => Print(p.fitness(trainEnv).toString))
     Print("test fitness:")
     generations.foreach(p => Print(p.fitness(testEnv).toString))
+    Print(generations.last.leader.config)
   }
 }
 
@@ -115,7 +117,8 @@ object Simulation extends App {
     def population: Population = {
       def newIndividual(e: Environment) = Individual(param.baseConfig.randomize, e)
       def defaultIndividual(e: Environment) = Individual(param.baseConfig, e)
-      val parList = (1 to param.populationSize).par
+      val list = (1 to param.populationSize)
+      val parList = if (param.notRandom) list else list.par
       val individuals = parList.map(i => newIndividual(trainEnv)).toList
       Population(defaultIndividual(trainEnv) +: individuals)
     }
@@ -132,7 +135,10 @@ object Simulation extends App {
     mutationRate = 0.1,
     baseConfig = DefaultConfig,
     defaultConfig = DefaultConfig,
+    notRandom = true,
     debug = false)
+
+  if (param.notRandom) scala.util.Random.setSeed(1)
 
   Simulation(param).run
 }

@@ -146,6 +146,13 @@ case class Pod(
 
   lazy val destinationDirection = (destination - position).normalize
 
+  def distanceToFinish: Double = {
+    case class Dist(p: Point, d: Double)
+    destinations.foldLeft(Dist(position, 0)){
+      case (d: Dist, next: Point) => Dist(next, d.p.distanceTo(next))
+    }.d
+  }
+
   def checkSpeedCheckpoint(checkpoint: Point): Boolean =
     Pod.distanceToLine(position, speed, checkpoint) < checkpointRadius
 
@@ -255,6 +262,14 @@ case class Race (
     }
   }
   def isFinished = looser.isDefined || winner.isDefined 
+
+  def raceDistance: Double = {
+    case class Dist(p: Point, d: Double)
+    checkpoints.foldLeft(Dist(checkpoints.last, 0)){
+      case (d: Dist, next: Point) => Dist(next, d.p.distanceTo(next))
+    }.d * laps
+  }
+
 
   def checkpointIndex(p: Point) = checkpoints.zipWithIndex.filter {
     case (target, index) ⇒ target == p

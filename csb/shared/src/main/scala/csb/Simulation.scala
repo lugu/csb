@@ -27,14 +27,17 @@ case class Environment(param: MetaParameter, races: Seq[Race]) {
   def games(player: Player) = races.map{ race => {
     Game(race, player, param.defaultPlayer, judge, 0).play
   }}
+  def fitnessWinner(race: Race): Double = {
+    1.0 + race.enemies.map(p => p.distanceToFinish).min / race.raceDistance
+  }
+  def fitnessLoser(race: Race): Double = - fitnessWinner(race.inverted)
+
   def fitness(player: Player): Double = {
     // use sum(-log(race.step)) to maximize
     games(player).map(g =>
-        if (g.winnerIsPlayerA)
-          -scala.math.log(g.step)
-        else
-          -scala.math.log(10000)
-        ).sum
+        if (g.winnerIsPlayerA) fitnessWinner(g.race)
+        else if (g.winnerIsPlayerB) fitnessLoser(g.race)
+        else 0).sum
   }
 }
 

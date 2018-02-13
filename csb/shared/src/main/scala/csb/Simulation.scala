@@ -51,7 +51,7 @@ case class Environment(param: MetaParameter, races: Seq[Race]) {
     games(player).map(g =>
         if (g.winnerIsPlayerA) fitnessWinner(g.race)
         else if (g.winnerIsPlayerB) fitnessLoser(g.race)
-        else 0).sum
+        else 0).sum / races.size
   }
 }
 

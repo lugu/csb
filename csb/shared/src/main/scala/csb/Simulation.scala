@@ -12,6 +12,19 @@ case class MetaParameter(
   notRandom: Boolean,
   debug: Boolean) {
     lazy val defaultPlayer = MetaPlayer(defaultConfig)
+
+    def setPopulation(n: Int) = MetaParameter(n, selectionSize,
+      numberOfGeneration, trainRacesNb, testRacesNb, mutationRate,
+      baseConfig, defaultConfig, notRandom, debug)
+
+    def setSelectionSize(n: Int) = MetaParameter(populationSize, n,
+      numberOfGeneration, trainRacesNb, testRacesNb, mutationRate,
+      baseConfig, defaultConfig, notRandom, debug)
+
+    def setMutationRate(n: Double) = MetaParameter(populationSize,
+      selectionSize, numberOfGeneration, trainRacesNb, testRacesNb, n,
+      baseConfig, defaultConfig, notRandom, debug)
+
   }
 
 case class Environment(param: MetaParameter, races: Seq[Race]) {
@@ -130,9 +143,18 @@ object Simulation extends App {
     Simulation(population, trainEnv, testEnv)
   }
 
+  def makeParams(param: MetaParameter): List[MetaParameter] = {
+    param :: param.setPopulation(param.populationSize * 2) ::
+    param.setPopulation(param.populationSize / 2) ::
+    param.setSelectionSize(param.selectionSize * 2) ::
+    param.setSelectionSize(param.selectionSize / 2) ::
+    param.setMutationRate(param.mutationRate * 2) ::
+    param.setMutationRate(param.mutationRate / 2) :: List()
+  }
+
   val param = MetaParameter(
     populationSize = 10,
-    selectionSize = 1,
+    selectionSize = 2,
     numberOfGeneration = 10,
     trainRacesNb = 10,
     testRacesNb = 10,

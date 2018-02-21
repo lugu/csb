@@ -122,18 +122,50 @@ case class Experiment(p: Population, e: Environment) {
   def fitness: Double = p.fitness(e)
 }
 
+case class Plot(time: Seq[Double], train: Seq[Double], test: Seq[Double]) {
+  def append(t1: Double, tr: Double, te: Double): Plot = {
+    Plot(time :+ t1, train :+ tr, test :+ te)
+  }
+  def plot(): Plot = {
+    import org.sameersingh.scalaplot.Implicits._
+    import org.sameersingh.scalaplot._
+    val generation = time.size - 1
+    val series = new MemXYSeries(time, train, "Training")
+    var d: XYData = new XYData(series)
+    d += new MemXYSeries(time, test, "Testing")
+    val xy = xyChart(d,
+      title = s"Fitness after $generation generations",
+      x = Axis(label = "time"),
+      y = Axis(label = "Fitness", range = Some((-1.0, 1.0))),
+      legendPosX = LegendPosX.Left,
+      legendPosY = LegendPosY.Bottom,
+      showLegend = true)
+    val s: String = output(ASCII, xy)
+    Print(s)
+    this
+  }
+}
+
 case class Simulation(population: Population, trainEnv: Environment, testEnv: Environment) {
-  def printFitness(t0: Long, p: Population) {
-    val t1 = System.nanoTime() - t0
+
+  def now(): Double = System.nanoTime() / 1000000000.0
+  val t0 = now()
+
+  def draw(plot: Plot, p: Population): Plot = {
+    val t1 = now() - t0
     val trainFitness = p.fitness(trainEnv)
     val testFitness = p.fitness(testEnv)
     Print(s"$t1 $trainFitness $testFitness")
+    plot.append(t1, trainFitness, testFitness).plot()
   }
 
   def run = {
-    val t0 = System.nanoTime()
     val generations: Stream[Population] = Experiment(population, trainEnv).generations
-    generations.foreach(p => printFitness(t0, p))
+    generations.foldLeft(Plot(List(0), List(0), List(0))){
+      case (plot: Plot, p: Population) => {
+        draw(plot, p)
+      }
+    }
     Print(generations.last.leader.config)
   }
 }
@@ -168,14 +200,14 @@ object Simulation extends App {
   val param = MetaParameter(
     populationSize = 10,
     selectionSize = 2,
-    numberOfGeneration = 5,
-    trainRacesNb = 50,
-    testRacesNb = 10,
+    numberOfGeneration = 20,
+    trainRacesNb = 400,
+    testRacesNb = 100,
     mutationRate = 0.01,
     baseConfig = DefaultConfig,
     defaultConfig = DefaultConfig,
     notRandom = false,
-    randomRaces = false,
+    randomRaces = true,
     failEarly = true,
     debug = false)
 

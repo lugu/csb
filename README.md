@@ -26,7 +26,7 @@
 # Project
 
 ## TODO
-    - bug: BetterConfig does not better in the browser
+    - scala native: not working due to missing scalaplot dependancy
 
 # Resources
 

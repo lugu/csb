@@ -12,7 +12,8 @@ lazy val csb =
     jvmSettings(
       scalaVersion := "2.12.4",
       libraryDependencies ++= Seq(
-              "org.scalatest" %% "scalatest" % "3.0.4"
+              "org.scalatest" %% "scalatest" % "3.0.4",
+              "org.sameersingh.scalaplot" % "scalaplot" % "0.0.4"
       )
     ).
     jsSettings(

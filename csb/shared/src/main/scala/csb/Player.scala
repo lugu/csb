@@ -203,6 +203,11 @@ case class ReplayPlayer(var input: Stream[String]) extends Player {
   def commands(race: Race): List[Move] = List(command, command)
 }
 
+case class Pilot1Player(implicit val config: Config) extends Player {
+  def name = "Pilot1"
+  def commands(race: Race): List[Move] = List(Pilot1(race.pod0, race).command, Pilot1(race.pod1, race).command)
+}
+
 case class DummyPlayer() extends Player {
   def name = "DummyPlayer"
   def command(pos: Point) = Move(pos, 0, "dummy")

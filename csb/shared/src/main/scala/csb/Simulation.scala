@@ -10,25 +10,30 @@ case class MetaParameter(
   baseConfig: Config,
   defaultConfig: Config,
   notRandom: Boolean,
+  randomRaces: Boolean,
+  failEarly: Boolean,
   debug: Boolean) {
     lazy val defaultPlayer = MetaPlayer(defaultConfig)
 
     def setPopulation(n: Int) = MetaParameter(n, selectionSize,
       numberOfGeneration, trainRacesNb, testRacesNb, mutationRate,
-      baseConfig, defaultConfig, notRandom, debug)
+      baseConfig, defaultConfig, notRandom, randomRaces, failEarly,
+      debug)
 
     def setSelectionSize(n: Int) = MetaParameter(populationSize, n,
       numberOfGeneration, trainRacesNb, testRacesNb, mutationRate,
-      baseConfig, defaultConfig, notRandom, debug)
+      baseConfig, defaultConfig, notRandom, randomRaces, failEarly,
+      debug)
 
     def setMutationRate(n: Double) = MetaParameter(populationSize,
       selectionSize, numberOfGeneration, trainRacesNb, testRacesNb, n,
-      baseConfig, defaultConfig, notRandom, debug)
-
+      baseConfig, defaultConfig, notRandom, randomRaces, failEarly,
+      debug)
   }
 
 case class Environment(param: MetaParameter, races: Seq[Race]) {
   def judge = JudgeSimulation
+  def nextEnvironment = if (param.randomRaces) Environment(races.size, param) else this
   def debug(player: Player, racesNb: Int): Unit = {
     val gameSeq = Environment(racesNb, param).games(player)
     val victories = gameSeq.count(g => g.winnerIsPlayerA)
@@ -47,6 +52,10 @@ case class Environment(param: MetaParameter, races: Seq[Race]) {
   def fitnessLoser(race: Race): Double = - fitnessWinner(race.inverted)
 
   def fitness(player: Player): Double = {
+    if (param.failEarly) {
+      val lost = Game(races.head, player, Pilot1Player()(param.baseConfig), judge, 0).play.winnerIsPlayerB
+      if (lost) return -1.0
+    }
     // use sum(-log(race.step)) to maximize
     games(player).map(g =>
         if (g.winnerIsPlayerA) fitnessWinner(g.race)
@@ -94,17 +103,20 @@ case class Population(p: Seq[Individual]) {
   // 2. breed new individuals through cross-over and mutations
   // 3. evaluate fitness of new individuals (population)
   def evolve(e: Environment): Population = {
-    selectPopulation(e.param.selectionSize).breedPopulation(p.size, e)
+    if (e.param.randomRaces)
+      selectPopulation(e.param.selectionSize).updateFitness(e).breedPopulation(p.size, e)
+    else
+      selectPopulation(e.param.selectionSize).breedPopulation(p.size, e)
   }
 
   def fitness(e: Environment): Double = leader.fitness(e)
 }
 
 case class Experiment(p: Population, e: Environment) {
-  def evolve: Population = p.evolve(e)
   def stream: Stream[Population] = {
-    val next = evolve
-    Stream.cons(next, Experiment(next, e).stream)
+    def evolve: Population = p.evolve(e)
+    val nextPopulation = evolve
+    Stream.cons(nextPopulation, Experiment(nextPopulation, e.nextEnvironment).stream)
   }
   def generations: Stream[Population] = stream.take(e.param.numberOfGeneration)
   def fitness: Double = p.fitness(e)
@@ -117,6 +129,7 @@ case class Simulation(population: Population, trainEnv: Environment, testEnv: En
     val testFitness = p.fitness(testEnv)
     Print(s"$t1 $trainFitness $testFitness")
   }
+
   def run = {
     val t0 = System.nanoTime()
     val generations: Stream[Population] = Experiment(population, trainEnv).generations
@@ -155,13 +168,15 @@ object Simulation extends App {
   val param = MetaParameter(
     populationSize = 10,
     selectionSize = 2,
-    numberOfGeneration = 10,
-    trainRacesNb = 10,
+    numberOfGeneration = 5,
+    trainRacesNb = 50,
     testRacesNb = 10,
-    mutationRate = 0.1,
+    mutationRate = 0.01,
     baseConfig = DefaultConfig,
     defaultConfig = DefaultConfig,
-    notRandom = true,
+    notRandom = false,
+    randomRaces = false,
+    failEarly = true,
     debug = false)
 
   if (param.notRandom) scala.util.Random.setSeed(1)

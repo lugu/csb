@@ -144,7 +144,7 @@ object Application {
   def randomGame = {
     val playerA = new MetaPlayer(BetterConfig)
     val playerB = new MetaPlayer(DefaultConfig)
-    val judge = JudgeSimulation()
+    val judge = JudgeSimulation
     new Game(Race.random, playerA, playerB, judge, 0)
   }
 }

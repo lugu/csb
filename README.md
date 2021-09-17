@@ -26,7 +26,6 @@
 # Project
 
 ## TODO
-    - scala native: not working due to missing scalaplot dependancy
 
 # Resources
 

@@ -1,7 +1,7 @@
 package csb
 import scala.util.Random
 
-case class Config(val name: String, val p: Map[String,Int]) {
+case class Config(val name: String, val p: Map[String, Int]) {
   val maxSpeed = p("maxSpeed")
   val maxSpeedCorrected = p("maxSpeedCorrected")
   val minSpeedCorrected = p("minSpeedCorrected")
@@ -9,8 +9,11 @@ case class Config(val name: String, val p: Map[String,Int]) {
   val minAngleCorrected = p("minAngleCorrected")
   val reactionDistanceCorrected = p("reactionDistanceCorrected")
   val speedFactorNumCorrected = p("speedFactorNumCorrected")
-  val speedFactorDenumCorrected = if (p("speedFactorDenumCorrected") == 0) 1 else p("speedFactorDenumCorrected")
-  val speedFactorCorrected: Double = speedFactorNumCorrected.toDouble / speedFactorDenumCorrected
+  val speedFactorDenumCorrected =
+    if (p("speedFactorDenumCorrected") == 0) 1
+    else p("speedFactorDenumCorrected")
+  val speedFactorCorrected: Double =
+    speedFactorNumCorrected.toDouble / speedFactorDenumCorrected
   val minSpeedOffsetCorrected = p("minSpeedOffsetCorrected")
   val longDistanceBoost = p("longDistanceBoost")
   val smallAngleBoost = p("smallAngleBoost")
@@ -29,119 +32,137 @@ case class Config(val name: String, val p: Map[String,Int]) {
   val stepsToDestinationPilot2 = p("stepsToDestinationPilot2")
   val maxSpeedPilot2 = p("maxSpeedPilot2")
   val ratioPilot1 = if (p("ratioPilot1") == 0) 1 else p("ratioPilot1")
-  val angleDenumPilot1 = if (p("angleDenumPilot1") == 0) 1 else p("angleDenumPilot1")
+  val angleDenumPilot1 =
+    if (p("angleDenumPilot1") == 0) 1 else p("angleDenumPilot1")
   val maxSpeedPilot1 = p("maxSpeedPilot1")
   val maxSpeedPilot0 = p("maxSpeedPilot0")
 
   def mergeWith(other: Config): Config = {
-    Config(name + "/" + other.name, Map[String,Int]() ++ p.keys.map(k => (k, (p(k) + other.p(k)) / 2)))
+    Config(
+      name + "/" + other.name,
+      Map[String, Int]() ++ p.keys.map(k => (k, (p(k) + other.p(k)) / 2))
+    )
   }
   def mutate(rate: Double): Config = {
-    val n = p.mapValues(e => java.lang.Math.round(e + Random.nextGaussian() * e * rate).toInt)
+    val n = p.mapValues(e =>
+      java.lang.Math.round(e + Random.nextGaussian() * e * rate).toInt
+    )
     Config(s"mutate($name, $rate)", n)
   }
   def randomize: Config = mutate(0.1)
 
   override def toString: String = "Map(" +
-    p.map{ case (k, v) => "\"" + k + "\"" + s" -> $v"}.mkString(",\n") +
+    p.map { case (k, v) => "\"" + k + "\"" + s" -> $v" }.mkString(",\n") +
     "))"
 }
 
-object DefaultConfig extends Config("DefaultConfig", Map(
-  "angleDenumPilot1" -> 4,
-  "anglePilotAvoid" -> 90,
-  "choosePilot1Distance" -> 5000,
-  "largeDistancePilotFight" -> 3000,
-  "longDistanceBoost" -> 4000,
-  "maxAngleCorrected" -> 18,
-  "maxSpeed" -> 200,
-  "maxSpeedCorrected" -> 200,
-  "maxSpeedPilot0" -> 200,
-  "maxSpeedPilot1" -> 200,
-  "maxSpeedPilot2" -> 200,
-  "maxSpeedPilotAvoid" -> 200,
-  "maxSpeedPilotWait" -> 200,
-  "minAngleCorrected" -> 90,
-  "minSpeedCorrected" -> 60,
-  "minSpeedOffsetCorrected" -> 150,
-  "ratioPilot1" -> 2,
-  "reactionDistanceCorrected" -> 5000,
-  "skipAngle" -> 30,
-  "skipAnglePilot2" -> 30,
-  "skipDistance" -> 2000,
-  "skipSpeed" -> 350,
-  "skipSpeedPilot2" -> 250,
-  "smallAngleBoost" -> 30,
-  "smallDistancePilotWait" -> 2500,
-  "speedFactorDenumCorrected" -> 20,
-  "speedFactorNumCorrected" -> 10,
-  "speedPilotHit" -> 200,
-  "stepsToDestinationPilot2" -> 4
-))
+object DefaultConfig
+    extends Config(
+      "DefaultConfig",
+      Map(
+        "angleDenumPilot1" -> 4,
+        "anglePilotAvoid" -> 90,
+        "choosePilot1Distance" -> 5000,
+        "largeDistancePilotFight" -> 3000,
+        "longDistanceBoost" -> 4000,
+        "maxAngleCorrected" -> 18,
+        "maxSpeed" -> 200,
+        "maxSpeedCorrected" -> 200,
+        "maxSpeedPilot0" -> 200,
+        "maxSpeedPilot1" -> 200,
+        "maxSpeedPilot2" -> 200,
+        "maxSpeedPilotAvoid" -> 200,
+        "maxSpeedPilotWait" -> 200,
+        "minAngleCorrected" -> 90,
+        "minSpeedCorrected" -> 60,
+        "minSpeedOffsetCorrected" -> 150,
+        "ratioPilot1" -> 2,
+        "reactionDistanceCorrected" -> 5000,
+        "skipAngle" -> 30,
+        "skipAnglePilot2" -> 30,
+        "skipDistance" -> 2000,
+        "skipSpeed" -> 350,
+        "skipSpeedPilot2" -> 250,
+        "smallAngleBoost" -> 30,
+        "smallDistancePilotWait" -> 2500,
+        "speedFactorDenumCorrected" -> 20,
+        "speedFactorNumCorrected" -> 10,
+        "speedPilotHit" -> 200,
+        "stepsToDestinationPilot2" -> 4
+      )
+    )
 
-object BetterConfig extends Config("BetterConfig", 
-  Map("maxSpeedPilot0" -> 209,
-    "maxSpeedPilot1" -> 238,
-    "anglePilotAvoid" -> 98,
-    "maxSpeedCorrected" -> 197,
-    "skipSpeedPilot2" -> 280,
-    "minAngleCorrected" -> 78,
-    "smallAngleBoost" -> 22,
-    "skipAnglePilot2" -> 27,
-    "skipSpeed" -> 263,
-    "maxSpeedPilot2" -> 154,
-    "stepsToDestinationPilot2" -> 2,
-    "maxAngleCorrected" -> 17,
-    "speedFactorDenumCorrected" -> 15,
-    "skipAngle" -> 28,
-    "angleDenumPilot1" -> 3,
-    "reactionDistanceCorrected" -> 5716,
-    "skipDistance" -> 2289,
-    "longDistanceBoost" -> 3602,
-    "maxSpeedPilotAvoid" -> 160,
-    "maxSpeed" -> 210,
-    "speedPilotHit" -> 248,
-    "maxSpeedPilotWait" -> 246,
-    "speedFactorNumCorrected" -> 10,
-    "largeDistancePilotFight" -> 2457,
-    "ratioPilot1" -> 1,
-    "minSpeedOffsetCorrected" -> 239,
-    "smallDistancePilotWait" -> 2965,
-    "choosePilot1Distance" -> 5292,
-    "minSpeedCorrected" -> 53))
+object BetterConfig
+    extends Config(
+      "BetterConfig",
+      Map(
+        "maxSpeedPilot0" -> 209,
+        "maxSpeedPilot1" -> 238,
+        "anglePilotAvoid" -> 98,
+        "maxSpeedCorrected" -> 197,
+        "skipSpeedPilot2" -> 280,
+        "minAngleCorrected" -> 78,
+        "smallAngleBoost" -> 22,
+        "skipAnglePilot2" -> 27,
+        "skipSpeed" -> 263,
+        "maxSpeedPilot2" -> 154,
+        "stepsToDestinationPilot2" -> 2,
+        "maxAngleCorrected" -> 17,
+        "speedFactorDenumCorrected" -> 15,
+        "skipAngle" -> 28,
+        "angleDenumPilot1" -> 3,
+        "reactionDistanceCorrected" -> 5716,
+        "skipDistance" -> 2289,
+        "longDistanceBoost" -> 3602,
+        "maxSpeedPilotAvoid" -> 160,
+        "maxSpeed" -> 210,
+        "speedPilotHit" -> 248,
+        "maxSpeedPilotWait" -> 246,
+        "speedFactorNumCorrected" -> 10,
+        "largeDistancePilotFight" -> 2457,
+        "ratioPilot1" -> 1,
+        "minSpeedOffsetCorrected" -> 239,
+        "smallDistancePilotWait" -> 2965,
+        "choosePilot1Distance" -> 5292,
+        "minSpeedCorrected" -> 53
+      )
+    )
 
-object BestConfig extends Config("BestConfig", 
-  Map("maxSpeedPilot0" -> 199,
-    "maxSpeedPilot1" -> 298,
-    "anglePilotAvoid" -> 95,
-    "maxSpeedCorrected" -> 242,
-    "skipSpeedPilot2" -> 256,
-    "minAngleCorrected" -> 78,
-    "smallAngleBoost" -> 18,
-    "skipAnglePilot2" -> 22,
-    "skipSpeed" -> 330,
-    "maxSpeedPilot2" -> 115,
-    "stepsToDestinationPilot2" -> 1,
-    "maxAngleCorrected" -> 16,
-    "speedFactorDenumCorrected" -> 10,
-    "skipAngle" -> 19,
-    "angleDenumPilot1" -> 2,
-    "reactionDistanceCorrected" -> 4957,
-    "skipDistance" -> 2771,
-    "longDistanceBoost" -> 3652,
-    "maxSpeedPilotAvoid" -> 141,
-    "maxSpeed" -> 220,
-    "speedPilotHit" -> 165,
-    "maxSpeedPilotWait" -> 334,
-    "speedFactorNumCorrected" -> 7,
-    "largeDistancePilotFight" -> 2150,
-    "ratioPilot1" -> 1,
-    "minSpeedOffsetCorrected" -> 234,
-    "smallDistancePilotWait" -> 3041,
-    "choosePilot1Distance" -> 6458,
-    "minSpeedCorrected" -> 50))
-
-
+object BestConfig
+    extends Config(
+      "BestConfig",
+      Map(
+        "maxSpeedPilot0" -> 199,
+        "maxSpeedPilot1" -> 298,
+        "anglePilotAvoid" -> 95,
+        "maxSpeedCorrected" -> 242,
+        "skipSpeedPilot2" -> 256,
+        "minAngleCorrected" -> 78,
+        "smallAngleBoost" -> 18,
+        "skipAnglePilot2" -> 22,
+        "skipSpeed" -> 330,
+        "maxSpeedPilot2" -> 115,
+        "stepsToDestinationPilot2" -> 1,
+        "maxAngleCorrected" -> 16,
+        "speedFactorDenumCorrected" -> 10,
+        "skipAngle" -> 19,
+        "angleDenumPilot1" -> 2,
+        "reactionDistanceCorrected" -> 4957,
+        "skipDistance" -> 2771,
+        "longDistanceBoost" -> 3652,
+        "maxSpeedPilotAvoid" -> 141,
+        "maxSpeed" -> 220,
+        "speedPilotHit" -> 165,
+        "maxSpeedPilotWait" -> 334,
+        "speedFactorNumCorrected" -> 7,
+        "largeDistancePilotFight" -> 2150,
+        "ratioPilot1" -> 1,
+        "minSpeedOffsetCorrected" -> 234,
+        "smallDistancePilotWait" -> 3041,
+        "choosePilot1Distance" -> 6458,
+        "minSpeedCorrected" -> 50
+      )
+    )
 
 trait Configurable {
   implicit val config = DefaultConfig
@@ -163,7 +184,8 @@ trait PilotConstructor extends Player {
 trait SimplePlayer extends Player with PilotConstructor {
   def commands(race: Race): List[Move] = {
     // Print(name)
-    val pilots: List[Pilot] = List(pilot(race.pod0, race), pilot(race.pod1, race))
+    val pilots: List[Pilot] =
+      List(pilot(race.pod0, race), pilot(race.pod1, race))
     pilots.map(_.command)
   }
 }
@@ -175,7 +197,8 @@ case class MetaPlayer(val config: Config) extends SimplePlayer {
   }
 }
 
-case class RepeatPlayer(val player: Player, val output: (String) => Unit) extends Player {
+case class RepeatPlayer(val player: Player, val output: (String) => Unit)
+    extends Player {
   def name = "RepeatPlayer"
   def commands(race: Race): List[Move] = {
     val c = player.commands(race)
@@ -188,8 +211,16 @@ case class TestPlayer(var step: Int) extends Player {
   def name = "TestPlayer"
   def commands(race: Race): List[Move] = {
     step += 1
-    if (step < 100) List(Move(Point(0, 100), 10, "before 1"), Move(Point(1000, 100), 10, "before 2"))
-    else List(Move(race.pod1.position, 100, "boom 1"), Move(Point(1000, 100), 10, "waiting 2"))
+    if (step < 100)
+      List(
+        Move(Point(0, 100), 10, "before 1"),
+        Move(Point(1000, 100), 10, "before 2")
+      )
+    else
+      List(
+        Move(race.pod1.position, 100, "boom 1"),
+        Move(Point(1000, 100), 10, "waiting 2")
+      )
   }
 }
 
@@ -205,13 +236,15 @@ case class ReplayPlayer(var input: Stream[String]) extends Player {
 
 case class Pilot1Player(implicit val config: Config) extends Player {
   def name = "Pilot1"
-  def commands(race: Race): List[Move] = List(Pilot1(race.pod0, race).command, Pilot1(race.pod1, race).command)
+  def commands(race: Race): List[Move] =
+    List(Pilot1(race.pod0, race).command, Pilot1(race.pod1, race).command)
 }
 
 case class DummyPlayer() extends Player {
   def name = "DummyPlayer"
   def command(pos: Point) = Move(pos, 0, "dummy")
-  def commands(race: Race): List[Move] = List(command(race.pod0.position), command(race.pod1.position))
+  def commands(race: Race): List[Move] =
+    List(command(race.pod0.position), command(race.pod1.position))
 }
 
 object Print {
@@ -226,7 +259,8 @@ object Print {
 
 trait Judge {
   def judge(race: Race, commands: List[Move]): Race
-  def isFinished(game: Game): Boolean = if (game.step > 3000) true else game.race.isFinished
+  def isFinished(game: Game): Boolean =
+    if (game.step > 3000) true else game.race.isFinished
 }
 
 object JudgeSimulation extends Judge {
@@ -242,10 +276,10 @@ case class JudgeReplay(var input: Stream[String]) extends Judge {
       val pods = input
         .take(4)
         .zip(race.pods)
-        .map {
-          case (line: String, pod: Pod) =>
-            pod.updateWith(updater.parsePodUpdate(line))
-        }.toList
+        .map { case (line: String, pod: Pod) =>
+          pod.updateWith(updater.parsePodUpdate(line))
+        }
+        .toList
       input = input.drop(4)
       Race(pods, race.checkpoints, race.laps)
     }
@@ -258,12 +292,11 @@ case class JudgeRepeat(val input: () => Stream[String]) extends Judge {
     val pods = input()
       .take(4)
       .zip(race.pods)
-      .map {
-        case (line: String, pod: Pod) =>
-          pod.updateWith(updater.parsePodUpdate(line))
+      .map { case (line: String, pod: Pod) =>
+        pod.updateWith(updater.parsePodUpdate(line))
       }
-        .toList
-        Race(pods, race.checkpoints, race.laps)
+      .toList
+    Race(pods, race.checkpoints, race.laps)
   }
 }
 
@@ -271,14 +304,25 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
 
   case class ComparePod(pod: Pod, reference: Pod) {
 
-    def testPoint(clue: String, point: Point, reference: Point, tolerance: Double) {
+    def testPoint(
+        clue: String,
+        point: Point,
+        reference: Point,
+        tolerance: Double
+    ) {
       testValue(clue + ".x", point.x, reference.x, tolerance)
       testValue(clue + ".y", point.y, reference.y, tolerance)
     }
 
-    def testValue(clue: String, value: Double, reference: Double, tolerance: Double) {
+    def testValue(
+        clue: String,
+        value: Double,
+        reference: Double,
+        tolerance: Double
+    ) {
       if (value < reference - tolerance || value > reference + tolerance)
-        if (IO.verbose) Print(s"test $clue: $value should be $reference +/- $tolerance")
+        if (IO.verbose)
+          Print(s"test $clue: $value should be $reference +/- $tolerance")
       /*
       import org.scalatest._
       import Matchers._
@@ -291,15 +335,19 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
           Print(e.getMessage)
         }
       }
-      */
+       */
     }
     def test = {
-      testValue("orientation", pod.orientation.angleToEast.degree, reference.orientation.angleToEast.degree, 1)
+      testValue(
+        "orientation",
+        pod.orientation.angleToEast.degree,
+        reference.orientation.angleToEast.degree,
+        1
+      )
       testPoint("speed", pod.speed, reference.speed, 1)
       testPoint("position", pod.position, reference.position, 1)
     }
   }
-
 
   override def isFinished(game: Game): Boolean = input.isEmpty
   def expectedPods(race: Race): List[Pod] = {
@@ -328,8 +376,13 @@ case class JudgeTest(var input: Stream[String]) extends Judge {
   }
 }
 
-
-case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step: Int) {
+case class Game(
+    race: Race,
+    playerA: Player,
+    playerB: Player,
+    judge: Judge,
+    step: Int
+) {
   def winner(game: Game): Option[Pod] = game.race.winner
   def isFinished = judge.isFinished(this)
   def winnerIsPlayerB: Boolean = race.winnerIsPlayerB
@@ -343,7 +396,6 @@ case class Game(race: Race, playerA: Player, playerB: Player, judge: Judge, step
   @scala.annotation.tailrec
   final def play: Game = if (judge.isFinished(this)) this else nextTurn.play
 }
-
 
 object Input {
   def stream: Stream[String] = Stream.continually(IO.readLine())
@@ -397,21 +449,21 @@ object IO {
   }
 
   def unbase64(inString: String): Array[Byte] = {
-      import java.util.Base64
-      Base64.getDecoder.decode(inString)
+    import java.util.Base64
+    Base64.getDecoder.decode(inString)
   }
 
   def base64(inData: Array[Byte]): String = {
-      import java.util.Base64
-      Base64.getEncoder.encodeToString(inData)
+    import java.util.Base64
+    Base64.getEncoder.encodeToString(inData)
   }
 
   def dump() = {
     val out = base64(compress(record.getBytes))
     var printed = 0
-    while(printed < out.size) {
-        Print(out.slice(printed, printed + 1024))
-        printed += 1024
+    while (printed < out.size) {
+      Print(out.slice(printed, printed + 1024))
+      printed += 1024
     }
   }
 }

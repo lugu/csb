@@ -19,7 +19,7 @@
 
 ## Generate target/Player.scala for the online competition:
 
-    sbt "csbJVM/run-main csb.bundle.BundlerMain csb/shared/src/main/scala/Player.scala"
+    sbt "csbJVM/runMain csb.bundle.BundlerMain csb/shared/src/main/scala/Player.scala"
     mv target/Player.scala .
     sbt scalafmt
 

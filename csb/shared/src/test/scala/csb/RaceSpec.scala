@@ -5,7 +5,8 @@ import scala.io.Source
 
 class RaceSpec extends FlatSpec with Matchers {
 
-  val dummyCheckpoints = List(Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4), Point(5, 5))
+  val dummyCheckpoints =
+    List(Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4), Point(5, 5))
 
   "PodUpdater" should "be able to parse input correctly" in {
     val input = "-1000 2000 200 -100 90 3"
@@ -16,8 +17,8 @@ class RaceSpec extends FlatSpec with Matchers {
     assert(pod.speed == Point(200, 100), "parse speed")
     assert(pod.destinations.head == Point(4, 4), "parse index")
 
-    pod.orientation.x should equal (0.0 +- 0.001)
-    pod.orientation.y should equal (-1.0 +- 0.001)
+    pod.orientation.x should equal(0.0 +- 0.001)
+    pod.orientation.y should equal(-1.0 +- 0.001)
   }
 
   def updatePosition(before: String, after: String, command: String) = {
@@ -50,4 +51,3 @@ class RaceSpec extends FlatSpec with Matchers {
     csb.races.RaceRecord3.game.play
   }
 }
-

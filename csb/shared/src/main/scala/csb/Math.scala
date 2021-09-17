@@ -1,6 +1,6 @@
 package csb
 
-import math.{ atan2, sqrt, pow, cos, sin, Pi }
+import math.{atan2, sqrt, pow, cos, sin, Pi}
 
 case class Angle(radian: Double) {
   // internal representation in radian from -Pi to Pi.
@@ -65,7 +65,8 @@ case class Point(x: Double, y: Double) {
   }
   def round = Point(x.round, y.round)
   // floor a 2D vector in absolute norm
-  def floor = Point(if (x < 0) x.ceil else x.floor, if (y < 0) y.ceil else y.floor)
+  def floor =
+    Point(if (x < 0) x.ceil else x.floor, if (y < 0) y.ceil else y.floor)
   def data: Array[Double] = Array(x, y)
   def angleToEast = Point(1, 0).radianWith(this)
   def closest(a: Point, b: Point): Point = {
@@ -74,7 +75,7 @@ case class Point(x: Double, y: Double) {
     val c1 = da * a.x + db * a.y
     val c2 = -db * x + da * y
     val det = da * da + db * db
-    if (det != 0) Point((da*c1 - db*c2) / det, (da*c2 + db*c1) / det)
+    if (det != 0) Point((da * c1 - db * c2) / det, (da * c2 + db * c1) / det)
     else Point(x, y)
   }
 }
@@ -82,4 +83,3 @@ case class Point(x: Double, y: Double) {
 object Point extends {
   def apply(a: Int, b: Int): Point = Point(a.toDouble, b.toDouble)
 }
-

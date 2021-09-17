@@ -1,4 +1,15 @@
-import csb.{Race,RepeatPlayer,BetterConfig,JudgeRepeat,DummyPlayer,MetaPlayer,Input,Output,Game,Print}
+import csb.{
+  Race,
+  RepeatPlayer,
+  BetterConfig,
+  JudgeRepeat,
+  DummyPlayer,
+  MetaPlayer,
+  Input,
+  Output,
+  Game,
+  Print
+}
 
 object Player extends App {
   val race = Race.parseInput(Input.stream)
@@ -9,6 +20,6 @@ object Player extends App {
 
   game.race.winner match {
     case Some(pod) => Print("winner is: " + pod.toString)
-    case None => Print("no winner")
+    case None      => Print("no winner")
   }
 }

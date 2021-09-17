@@ -22,8 +22,10 @@ case class Bundler(fileName: String, io: BundlerIo) {
     filesFromImport ++ filesInSameFolder
   }
 
-  def filesList(queue: List[File],
-                contents: Map[File, List[String]]): List[File] = queue match {
+  def filesList(
+      queue: List[File],
+      contents: Map[File, List[String]]
+  ): List[File] = queue match {
     case Nil => Nil
     case file :: t =>
       val fileLines = io.readFile(file)
@@ -50,9 +52,11 @@ case class Bundler(fileName: String, io: BundlerIo) {
          |$content
          |}""".stripMargin
 
-  def add(pkgName: String,
-          content: String,
-          contents: PackageContents): PackageContents = {
+  def add(
+      pkgName: String,
+      content: String,
+      contents: PackageContents
+  ): PackageContents = {
     val value = contents.getOrElse(pkgName, "") + "\n" + content
     contents.updated(pkgName, value)
   }
@@ -67,7 +71,8 @@ case class Bundler(fileName: String, io: BundlerIo) {
   private def transformSingleFile(
       f: File,
       packagesContents: PackageContents,
-      forceToRoot: Boolean = false): PackageContents = {
+      forceToRoot: Boolean = false
+  ): PackageContents = {
     val lines = io.readFile(f)
     val (pkgLines, rest) = lines.span(_.startsWith("package"))
     val result = rest.map(_.trim).filterNot("".==).mkString("\n")
@@ -78,13 +83,16 @@ case class Bundler(fileName: String, io: BundlerIo) {
         add(pkgName, result, packagesContents)
       case _ =>
         throw new Exception(
-          "Bundler does not support multiple packages declaration")
+          "Bundler does not support multiple packages declaration"
+        )
     }
   }
 
   private def filesFromLine(line: String): List[File] =
-    if (!line.startsWith("import") || Seq("scala", "java").exists(i =>
-          line.startsWith(s"import $i")))
+    if (
+      !line.startsWith("import") || Seq("scala", "java")
+        .exists(i => line.startsWith(s"import $i"))
+    )
       Nil
     else {
       val imported = line.split(" ").tail.mkString

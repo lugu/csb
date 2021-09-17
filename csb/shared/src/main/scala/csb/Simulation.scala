@@ -25,8 +25,8 @@ case class MetaParameter(
       baseConfig, defaultConfig, notRandom, randomRaces, failEarly,
       debug)
 
-    def setMutationRate(n: Double) = MetaParameter(populationSize,
-      selectionSize, numberOfGeneration, trainRacesNb, testRacesNb, n,
+    def setMutationRate(r: Double) = MetaParameter(populationSize,
+      selectionSize, numberOfGeneration, trainRacesNb, testRacesNb, r,
       baseConfig, defaultConfig, notRandom, randomRaces, failEarly,
       debug)
   }
@@ -155,7 +155,7 @@ case class Simulation(population: Population, trainEnv: Environment, testEnv: En
     val t1 = now() - t0
     val trainFitness = p.fitness(trainEnv)
     val testFitness = p.fitness(testEnv)
-    Print(s"$t1 $trainFitness $testFitness")
+    Print(s"time: $t1, fitness: train=$trainFitness / test=$testFitness")
     plot.append(t1, trainFitness, testFitness).plot()
   }
 

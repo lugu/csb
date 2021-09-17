@@ -2,12 +2,12 @@
 ## Build optimized version:
 
     sbt "csbJS/fullOptJS"
-    firefox ./csb/js/target/scala-2.11/classes/index-opt.html
+    firefox ./csb/js/target/scala-2.12/classes/index-opt.html
 
 ## Build develepment version:
 
     sbt "csbJS/fastOptJS"
-    firefox ./csb/js/target/scala-2.11/classes/index-dev.html
+    firefox ./csb/js/target/scala-2.12/classes/index-dev.html
 
 ## Run test suite:
 

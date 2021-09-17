@@ -134,7 +134,7 @@ object Board {
 
 object Application {
 
-  @JSExportTopLevel("csb.Application.main")
+  @JSExportTopLevel("csbApplicationMain")
   def main(canvas: html.Canvas): Unit = {
     val game = randomGame
     // val game = csb.races.RaceRecord2.game

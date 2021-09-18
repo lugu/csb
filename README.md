@@ -1,31 +1,31 @@
+
+![Screenshot of the game: 4 vehicles are racing](csb/js/src/main/resources/screenshot.png)
+
 # Run
-## Build optimized version:
+
+Optimized version:
 
     sbt "csbJS/fullOptJS"
     firefox ./csb/js/target/scala-2.12/classes/index-opt.html
 
-## Build develepment version:
+Development version:
 
     sbt "csbJS/fastOptJS"
     firefox ./csb/js/target/scala-2.12/classes/index-dev.html
 
-## Run test suite:
+# Test
 
     sbt "csbJVM/testQuick"
 
-## Run simulation:
+# Learn
 
     sbt "csbNative/runMain sim.Simulation"
 
-## Generate target/Player.scala for the online competition:
+# Export
 
     sbt "csbJVM/runMain csb.bundle.BundlerMain csb/shared/src/main/scala/Player.scala"
     mv target/Player.scala .
     sbt scalafmt
-
-# Project
-
-## TODO
 
 # Resources
 

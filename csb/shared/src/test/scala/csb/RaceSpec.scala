@@ -1,9 +1,11 @@
 package csb
 
 import org.scalatest._
+import org.scalatest.flatspec._
+import org.scalatest.matchers._
 import scala.io.Source
 
-class RaceSpec extends FlatSpec with Matchers {
+class RaceSpec extends AnyFlatSpec with should.Matchers {
 
   val dummyCheckpoints =
     List(Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4), Point(5, 5))

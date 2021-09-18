@@ -1,9 +1,11 @@
 package sim
 
-import org.scalatest._
 import csb._
+import org.scalatest._
+import org.scalatest.flatspec._
+import org.scalatest.matchers._
 
-class SimulationSpec extends FlatSpec with Matchers {
+class SimulationSpec extends AnyFlatSpec with should.Matchers {
 
   "RaceRecord" should "print itself correctly" in {
 

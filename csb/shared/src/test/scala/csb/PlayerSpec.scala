@@ -3,8 +3,10 @@ package csb
 import math.{Pi}
 
 import org.scalatest._
+import org.scalatest.flatspec._
+import org.scalatest.matchers._
 
-class PlayerSpec extends FlatSpec with Matchers {
+class PlayerSpec extends AnyFlatSpec with should.Matchers {
 
   def position = Point(0, 0)
   def speed = Point(100, 0)

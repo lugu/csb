@@ -1,4 +1,17 @@
-package csb
+package sim
+
+import csb.{
+  Config,
+  DefaultConfig,
+  Game,
+  JudgeSimulation,
+  MetaPlayer,
+  Output,
+  Pilot1Player,
+  Player,
+  Print,
+  Race
+}
 
 case class MetaParameter(
     populationSize: Int,

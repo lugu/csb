@@ -1,6 +1,7 @@
-package csb
+package sim
 
 import org.scalatest._
+import csb._
 
 class SimulationSpec extends FlatSpec with Matchers {
 
